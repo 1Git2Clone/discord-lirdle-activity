@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<!--
+// Copyright (C) 2023 Bovination Productions, MIT License
+// Revamped for Discord Activity 2026
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lirdle: One Lie Per Line</title>
+    <link rel="stylesheet" href="styles/style001.css">
+    <link rel="stylesheet" href="./vendor/toastr.min.css">
+    <link rel="stylesheet" href="./vendor/animate.min.css">
+    <link rel="stylesheet" class="theme" href="styles/classic.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <!-- UPCOMING FEATURE -->
+    <!-- <div id="loading-screen" class="active">
+        <div class="spinner"></div>
+        <h2>Loading Lirdle...</h2>
+        <div class="progress-bar">
+            <div class="progress-fill"></div>
+        </div>
+    </div> -->
+
+    <h1>Lirdle: One Lie Per Line</h1>
+    <h2 id="result" class="collapsible hidden"><span id="result1"></span> | <button class="button" type="button"
+            id="shareResults">Copy to Clipboard</button></h2>
+    <h2 id="alldone" class="collapsible hidden"><span id="comeBackTime"></span></h2>
+
+    <!-- Minimized Window Overlay -->
+    <div id="minimized-overlay">
+        <div class="minimized-content">
+            <h2>📱 Minimize Mode</h2>
+            <p>Tap to continue playing</p>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="game-board">
+        <!--
+        <div class="letter-row-container">
+            <div class="balancingLeftSideNumLeftHeading" />
+            <div class="letter-row">...</div>
+            <div class="numLeftHeading">...</div>
+        </div>
+        -->
+    </div>
+
+    <div id="matchingWords" class="hidden">
+        <h3>Other matched words</h3>
+        <textarea aria-label="List of remaining possible words" id="matchingWordsList" cols="10" rows="6" readonly="true"></textarea><br>
+        <button id="closeMatchingWords" type="button">Close</button>
+    </div>
+    <div id="keyboard-cont">
+        <div id="dupWord" class="wordProblemPrompt hidden"><span>You already tried "</span><span
+                id="dupWordContents"></span><span>"</span></div>
+        <div id="secondaryWordWarning" class="wordProblemPrompt hidden">Secondary word: valid, not a target</div>
+        <div id="dupWordHint" class="wordProblemPrompt hidden"><span>This word will use up a duplicate-word hint</span>
+        </div>
+        <div id="nonWordHint" class="wordProblemPrompt hidden"><span>This word will use up a non-word hint</span></div>
+        <div id="fiveGreenFakeOut" class="wordProblemPrompt hidden"><span>Congratulations on getting a Fake Out! You're
+                close but that's not the right word.</span><br /></div>
+        <div class="first-row">
+            <button class="keyboard-button" type="button">q</button>
+            <button class="keyboard-button" type="button">w</button>
+            <button class="keyboard-button" type="button">e</button>
+            <button class="keyboard-button" type="button">r</button>
+            <button class="keyboard-button" type="button">t</button>
+            <button class="keyboard-button" type="button">y</button>
+            <button class="keyboard-button" type="button">u</button>
+            <button class="keyboard-button" type="button">i</button>
+            <button class="keyboard-button" type="button">o</button>
+            <button class="keyboard-button" type="button">p</button>
+        </div>
+        <div class="second-row">
+            <button class="keyboard-button" type="button">a</button>
+            <button class="keyboard-button" type="button">s</button>
+            <button class="keyboard-button" type="button">d</button>
+            <button class="keyboard-button" type="button">f</button>
+            <button class="keyboard-button" type="button">g</button>
+            <button class="keyboard-button" type="button">h</button>
+            <button class="keyboard-button" type="button">j</button>
+            <button class="keyboard-button" type="button">k</button>
+            <button class="keyboard-button" type="button">l</button>
+        </div>
+        <div class="third-row">
+            <button class="keyboard-button" type="button">Del</button>
+            <button class="keyboard-button" type="button">z</button>
+            <button class="keyboard-button" type="button">x</button>
+            <button class="keyboard-button" type="button">c</button>
+            <button class="keyboard-button" type="button">v</button>
+            <button class="keyboard-button" type="button">b</button>
+            <button class="keyboard-button" type="button">n</button>
+            <button class="keyboard-button" type="button">m</button>
+            <button class="keyboard-button" type="button">Enter</button>
+        </div>
+    </div>
+    <div id="whats-new">
+        <h3>What's New:</h3>
+        <ul>
+            <li>Shades of 2004! We have a <a target="_blank" rel="noopener noreferrer" href="https://lirdle.blogspot.com/">blog</a>!</li>
+            <li><a target="_blank" rel="noopener noreferrer" href="https://www.youtube.com/@squirrelsmith/videos">Watch replays!</a></li>
+            <li>Secondary words are now flagged. These are valid but will never be the word of the day.</li>
+            <li>The num-possible-word label becomes a button at the end of the game.</li>
+            <li>Opt-in hints. Duplicates kick in every 8 guesses, non-words every 12. Track how close you are. See below.
+            </li>
+            <li><a href="howtoplay.html" target="_blank">The Help Doc</a></li>
+            <li>Click on a filled letter to mark a lie, then truth, then neutral.</li>
+            <li id="tofw" class="tofw hidden"><span id="tofw-heading">Testimonial of the Week: &ldquo;</span><span
+                    id="tofw-body"></span><span id="tofw-e-heading">&rdquo;</span></li>
+        </ul>
+        <div id="yesterdaysWord" class="summary hidden">Yesterday's word was "<span id="theAnswer"></span>"<span
+                id="answerStats"></span>.</div>
+        <div id="todaysStats" class="summary hidden">Today's stats so far: <span id="todaysPctFinishedSoFar"></span>%
+            finished, avg tries: <span id="todaysAvgSoFar"></span>.</div>
+        <div id="themeSwitcher">
+            <label for="theme-select">Switch theme:</label>
+            <select name="themes" id="theme-select">
+                <option selected value="classic">Classic</option>
+                <option value="brainerd">Brainerd</option>
+                <option value="butter">Butter</option>
+                <option value="dark">Dark</option>
+                <option value="distractle">Distractle</option>
+                <option value="frikadeller">Frikadeller</option>
+                <option value="kincaid">Kincaid</option>
+                <option value="louisiana">Louisiana</option>
+                <option value="pink">Pink</option>
+                <option value="tommy">Tommy</option>
+            </select>
+        </div>
+        <div id="hintsBlock">
+            <fieldset>
+                <legend>Hints</legend>
+                <label for="toggle-hints">Hints are off</label>
+                <input name="toggle-hints" id="toggle-hints" type="checkbox" value="off" />
+                <p>Duplicate Words Available: <span id="numDuplicateWordsEarned">0</span></p>
+                <p>Non-Words Available: <span id="numNonWordsEarned">0</span> (enter any five letters)</p>
+                <hr />
+                <label for="toggle-num-left">Showing # possibilities is off</label>
+                <input name="toggle-num-left" id="toggle-num-left" type="checkbox" checked="false" />
+                <hr />
+                <button type="button" name="clear-markers" id="clear-markers">Clear the truth/lie markers</button>
+            </fieldset>
+        </div>
+    </div>
+    <div id="statistics" class="hidden">
+        <div id="closeRow">
+            <button class="button" type="button" id="shareStats">Copy to Clipboard</button>
+            <button id="closeStats" type="button">Close</button>
+        </div><br>
+        <div id="statsBody"></div>
+    </div>
+    <noscript>You need to enable JavaScript to run this app</noscript>
+    <footer>
+    </footer>
+
+    <!-- jQuery & Toastr -->
+    <script src="./vendor/jquery-3.6.0.min.js"></script>
+    <script src="./vendor/toastr.min.js"></script>
+    <script src="./script.js" type="module"></script>
+    <script src="./discord.js" type="module"></script>
+</body>
+</html>

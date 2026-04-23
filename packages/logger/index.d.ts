@@ -1,0 +1,1 @@
+export function clog(fn: Function, ...args: any[]): void;

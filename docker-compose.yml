@@ -1,0 +1,40 @@
+services:
+  web:
+    image: ghcr.io/surrealarts/discord-lirdle-activity:latest
+    restart: always
+    command: pnpm run dev:web
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=file:/app/packages/db/dev.db
+    volumes:
+      - lirdle_sqlite_data:/app/packages/db
+
+  bot:
+    image: ghcr.io/surrealarts/discord-lirdle-activity:latest  # <-- ADD THIS
+    restart: always
+    working_dir: /app/apps/bot
+    entrypoint: ["node", "index.js"]
+    command: node index.js
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=file:/app/packages/db/dev.db
+    volumes:
+      - lirdle_sqlite_data:/app/packages/db
+    depends_on:
+      - web
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: always
+    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
+    env_file:
+      - .env
+    depends_on:
+      - web
+
+volumes:
+  lirdle_sqlite_data:

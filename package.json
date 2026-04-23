@@ -1,0 +1,17 @@
+{
+  "name": "discord-lirdle-activity",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev:bot": "pnpm --filter @lirdle/bot run dev",
+    "dev:web": "pnpm --filter @lirdle/web run dev",
+    "dev": "pnpm --parallel --filter @lirdle/* run dev",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "anato",
+  "license": "MIT",
+  "packageManager": "pnpm@10.33.0"
+}
