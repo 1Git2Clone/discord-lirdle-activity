@@ -13,7 +13,7 @@ services:
       - lirdle_sqlite_data:/app/packages/db
 
   bot:
-    image: ghcr.io/surrealarts/discord-lirdle-activity:latest  # <-- ADD THIS
+    image: ghcr.io/surrealarts/discord-lirdle-activity:latest
     restart: always
     working_dir: /app/apps/bot
     entrypoint: ["node", "index.js"]

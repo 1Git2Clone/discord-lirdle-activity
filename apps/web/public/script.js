@@ -145,13 +145,13 @@ function initialize() {
             console.log(`Trying to share failed: ${ err }`);
         }
     });
-    document.getElementById('theme-select').addEventListener('input', (e) => {
-        const themeName = view.changeThemeHandler(e);
-        if (themeName) {
-            model.changeTheme(themeName);
-        }
-        e.target.blur();
-    });
+    // document.getElementById('theme-select').addEventListener('input', (e) => {
+    //     const themeName = view.changeThemeHandler(e);
+    //     if (themeName) {
+    //         model.changeTheme(themeName);
+    //     }
+    //     e.target.blur();
+    // });
 
     view.showTestimonial();
     view.doBlurbs();

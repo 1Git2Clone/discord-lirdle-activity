@@ -14,7 +14,6 @@ export const token = process.env.TOKEN;
 export const version = process.env.VERSION;
 
 // DATABASE & LOGGING
-export const databaseUrl = process.env.DATABASE_URL;
 export const logWithTime = process.env.LOG_WITH_TIME !== 'false';
 export const logTimezone = process.env.LOG_TIMEZONE || 'UTC';
 
@@ -23,7 +22,6 @@ function validateConfig() {
 
 	if (!clientid) missing.essential.push('CLIENT_ID');
 	if (!token) missing.essential.push('TOKEN');
-	if (!databaseUrl) missing.essential.push('DATABASE_URL');
 
 	if (!version) missing.nonEssential.push('VERSION');
 

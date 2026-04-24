@@ -30,8 +30,6 @@ PORT=3000
 LOG_WITH_TIME=true
 LOG_TIMEZONE=UTC
 
-DATABASE_URL=file:dev.db
-
 # Get your token from cloudflare's cloudflared.
 TUNNEL_TOKEN=your_cloudflare_tunnel_token
 ```

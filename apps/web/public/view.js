@@ -32,7 +32,7 @@ View.prototype = {
     },
     setModelContinue() {
         this.showYesterdaysWord();
-        this.initializeTheme(this.model.prefs.theme);
+        // this.initializeTheme(this.model.prefs.theme);
     },
     populateBoardFromSaveableState(numNeededRows, guessWords, scores, markers) {
         this.initBoard(numNeededRows);
@@ -636,33 +636,33 @@ View.prototype = {
             }
         }
     },
-    initializeTheme(theme) {
-        document.querySelector('#theme-select').value = theme;
-        if (theme !== 'classic') {
-            this.changeTheme(theme);
-        }
-    },
-    changeThemeHandler(e) {
-        const value = e.target.value;
-        if (!['brainerd', 'butter', 'classic', 'dark', 'distractle', 'frikadeller', 'kincaid', 'louisiana', 'pink', 'tommy'].includes(value)) {
-            console.log(`Can't process theme ${ value }`);
-            return;
-        }
-        this.changeTheme(value);
-        return value;
-    },
-    changeTheme(theme) {
-        const elts = Array.from(document.querySelectorAll('link.theme')).
-        filter(elt => elt.classList.contains('theme'));
-        for (const elt of elts) {
-            if (elt.getAttribute('href') !== `styles/${ theme }.css`) {
-                elt.parentElement.removeChild(elt);
-            }
-        }
-        document.getElementsByTagName("head")[0].insertAdjacentHTML(
-            "beforeend",
-            `<link rel="stylesheet" class="theme" href="styles/${ theme }.css" />`);
-    },
+    // initializeTheme(theme) {
+    //     document.querySelector('#theme-select').value = theme;
+    //     if (theme !== 'classic') {
+    //         this.changeTheme(theme);
+    //     }
+    // },
+    // changeThemeHandler(e) {
+    //     const value = e.target.value;
+    //     if (!['brainerd', 'butter', 'classic', 'dark', 'distractle', 'frikadeller', 'kincaid', 'louisiana', 'pink', 'tommy'].includes(value)) {
+    //         console.log(`Can't process theme ${ value }`);
+    //         return;
+    //     }
+    //     this.changeTheme(value);
+    //     return value;
+    // },
+    // changeTheme(theme) {
+    //     const elts = Array.from(document.querySelectorAll('link.theme')).
+    //     filter(elt => elt.classList.contains('theme'));
+    //     for (const elt of elts) {
+    //         if (elt.getAttribute('href') !== `styles/${ theme }.css`) {
+    //             elt.parentElement.removeChild(elt);
+    //         }
+    //     }
+    //     document.getElementsByTagName("head")[0].insertAdjacentHTML(
+    //         "beforeend",
+    //         `<link rel="stylesheet" class="theme" href="styles/${ theme }.css" />`);
+    // },
     updateHintCounts(values) {
         const hintsBlock = document.querySelector('div#hintsBlock');
         if (hintsBlock) {

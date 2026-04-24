@@ -85,14 +85,33 @@ Model.prototype = {
             showNumLeft.labels[0].textContent = `Showing # possibilities is ${this.prefs.showNumLeft ? 'on' : 'off'}`;
             showNumLeft.checked = this.prefs.showNumLeft;
         }
+        let loadedStats = null;
+        if (window.LIRDLE_CLOUD_SAVE && window.LIRDLE_CLOUD_SAVE.stats) {
+            const cs = window.LIRDLE_CLOUD_SAVE.stats;
+            loadedStats = typeof cs === 'string' ? JSON.parse(cs) : cs;
+        }
+        if (!loadedStats) {
+            try { loadedStats = JSON.parse(localStorage.getItem('stats')); } catch (e) { }
+        }
         try {
-            const stats = JSON.parse(localStorage.getItem('stats'));
-            this.stats.initialize(stats);
+            this.stats.initialize(loadedStats);
         } catch(e) {
             console.log(`Couldn't read stats: ${ e }`);
             this.stats.initialize(null);
         }
-        const savedState = JSON.parse(localStorage.getItem('saveableState'));
+        let savedState = null;
+        if (window.LIRDLE_CLOUD_SAVE && window.LIRDLE_CLOUD_SAVE.guesses) {
+            const cg = window.LIRDLE_CLOUD_SAVE.guesses;
+            savedState = typeof cg === 'string' ? JSON.parse(cg) : cg;
+        }
+        if (!savedState) {
+            try {
+                savedState = JSON.parse(localStorage.getItem('saveableState')) || JSON.parse(localStorage.getItem('gameState'));
+            } catch (e) { }
+        }
+        if (!savedState) {
+            throw new Error("No saved state found. Initializing fresh board.");
+        }
         const currentDate = getDateNumber();
         // console.log(`savedState:`, savedState);
         if (savedState.date !== currentDate) {

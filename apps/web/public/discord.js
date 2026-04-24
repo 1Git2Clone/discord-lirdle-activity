@@ -3,6 +3,60 @@ import { DiscordSDK } from "./vendor/discord-sdk.js";
 let discordSdk;
 let discordUser = null;
 
+async function authenticateWithRetry(clientId, maxRetries = 3) {
+	let cachedToken = null;
+	try {
+		cachedToken = localStorage.getItem('discord_access_token');
+	} catch (e) {
+		// Browser blocked storage, proceed to normal auth
+	}
+
+	if (cachedToken) {
+		try {
+			const authResult = await discordSdk.commands.authenticate({ access_token: cachedToken });
+			return authResult;
+		} catch (err) {
+			console.warn("Cached token was expired or invalid. Fetching a fresh code.");
+			try { localStorage.removeItem('discord_access_token'); } catch (e) { }
+		}
+	}
+
+	for (let i = 0; i < maxRetries; i++) {
+		try {
+			const { code } = await discordSdk.commands.authorize({
+				client_id: clientId,
+				response_type: "code",
+				state: "",
+				prompt: "none",
+				scope: ["identify", "guilds"],
+			});
+
+			const response = await fetch('/api/token', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ code })
+			});
+
+			const data = await response.json();
+			if (!data.access_token) {
+				throw new Error(`Backend token exchange failed. Discord API said: ${JSON.stringify(data)}`);
+			}
+
+			try {
+				localStorage.setItem('discord_access_token', data.access_token);
+			} catch (e) {
+				// Browser blocked storage, ignore
+			}
+
+			return await discordSdk.commands.authenticate({ access_token: data.access_token });
+		} catch (err) {
+			console.warn(`Discord SDK Auth attempt ${i + 1} stumbled:`, err);
+			if (i === maxRetries - 1) throw err;
+			await new Promise(resolve => setTimeout(resolve, 500));
+		}
+	}
+}
+
 async function setupDiscord() {
 	try {
 		const configRes = await fetch('/api/config');
@@ -11,27 +65,44 @@ async function setupDiscord() {
 		discordSdk = new DiscordSDK(clientId);
 		await discordSdk.ready();
 
-		const { code } = await discordSdk.commands.authorize({
-			client_id: clientId, response_type: "code", state: "", prompt: "none", scope: ["identify", "guilds"],
-		});
+		await new Promise(resolve => setTimeout(resolve, 200));
 
-		const response = await fetch('/api/token', {
-			method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code })
-		});
-
-		const { access_token } = await response.json();
-		const authResult = await discordSdk.commands.authenticate({ access_token });
+		const authResult = await authenticateWithRetry(clientId);
 		discordUser = authResult.user;
 
 		const today = new Date().toISOString().split('T')[0];
 		const syncRes = await fetch(`/api/load-session?userId=${discordUser.id}&date=${today}`);
-		const syncData = await syncRes.json();
 
-		if (syncData.session && syncData.session.guesses) {
-			localStorage.setItem('gameState', syncData.session.guesses);
-		}
-		if (syncData.session && syncData.session.stats) {
-			localStorage.setItem('stats', JSON.stringify(syncData.session.stats));
+		if (syncRes.ok) {
+			const syncData = await syncRes.json();
+			window.LIRDLE_CLOUD_SAVE = syncData.session;
+
+			if (!syncData.session) {
+				try {
+					localStorage.removeItem('gameState');
+					localStorage.removeItem('saveableState');
+					console.log("DB is empty for today. Local board wiped.");
+				} catch (storageErr) {
+					// Ignore browser security blocks
+				}
+			} else {
+				try {
+					if (syncData.session && syncData.session.guesses) {
+						const guessesStr = typeof syncData.session.guesses === 'string'
+							? syncData.session.guesses
+							: JSON.stringify(syncData.session.guesses);
+						localStorage.setItem('gameState', guessesStr);
+					}
+					if (syncData.session && syncData.session.stats) {
+						const statsStr = typeof syncData.session.stats === 'string'
+							? syncData.session.stats
+							: JSON.stringify(syncData.session.stats);
+						localStorage.setItem('stats', statsStr);
+					}
+				} catch (storageErr) {
+					console.warn("Browser blocked localStorage, relying purely on Memory Bypass.");
+				}
+			}
 		}
 	} catch (err) {
 		console.error("Cloud sync failed. Proceeding with local state.", err);
