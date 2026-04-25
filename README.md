@@ -5,9 +5,10 @@
 A full-stack Discord application bringing the "One Lie Per Line" word game natively to Discord voice channels. This project is structured as a **pnpm v10 monorepo** and includes the interactive Activity frontend, an Express backend, a Discord.js utility bot, and a persistent SQLite database. I dedicate this to Eric Promislow for the original [lirdle game](https://lirdle.com)! (His [github repo](https://github.com/ericpromislow/lirdle))
 
 ## Features
-* **Discord Activity:** Play Lirdle natively inside Discord voice channels.
-* **Bot Commands:** Features `/status` and `/share`.
-* **Cross-Device Sync:** Play on desktop, pick up on mobile. All synced.
+
+- **Discord Activity:** Play Lirdle natively inside Discord voice channels.
+- **Bot Commands:** Features `/status` and `/share`.
+- **Cross-Device Sync:** Play on desktop, pick up on mobile. All synced.
 
 ---
 
@@ -16,7 +17,9 @@ A full-stack Discord application bringing the "One Lie Per Line" word game nativ
 This application is designed to be deployed using Docker. The database is stored in a persistent Docker volume (`lirdle_sqlite_data`) so game streaks are never lost.
 
 ### 1. Environment Setup
+
 Create a `.env` file from `.env.example` in the root directory:
+
 ```env
 # Key configuration for discord bot.
 CLIENT_ID=your_client_id
@@ -35,13 +38,17 @@ TUNNEL_TOKEN=your_cloudflare_tunnel_token
 ```
 
 ### 2. Launch the Stack
+
 Start the Web server, Bot, and Cloudflare Tunnel:
+
 ```bash
 docker-compose up -d --build
 ```
 
 ### 3. Initialize the Database (First Run Only)
+
 Once the containers are running, push the Prisma schema to the SQLite volume:
+
 ```bash
 docker-compose exec web pnpm --filter @lirdle/db exec prisma db push
 ```
@@ -53,18 +60,21 @@ docker-compose exec web pnpm --filter @lirdle/db exec prisma db push
 If you are developing locally without Docker, follow these steps:
 
 1. **Install Dependencies:**
-   *(Note: Native packages like canvas and better-sqlite3 require build approvals in pnpm v10)*
+   _(Note: Native packages like canvas and better-sqlite3 require build approvals in pnpm v10)_
+
    ```bash
    pnpm install
    pnpm approve-builds --all
    ```
 
 2. **Generate Prisma Client:**
+
    ```bash
    pnpm --filter @lirdle/db exec prisma generate
    ```
 
 3. **Start Development Servers:**
+
    ```bash
    # Terminal 1: Run the Tunnel
    cloudflared tunnel run --token <token>
@@ -76,7 +86,17 @@ If you are developing locally without Docker, follow these steps:
    node .
    ```
 
+### Docker
+
+In case of running it with docker, do step 1 and 2 from [`Local
+Development`](#local-development), and then run:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+```
+
 # LICENSE
 
 Copyright (C) 2023 Bovination Productions, MIT License.\
 Revamped for Lirdle Discord Activity 2026.
+
