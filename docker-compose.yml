@@ -4,7 +4,7 @@ services:
     restart: always
     command: pnpm run dev:web
     ports:
-      - "3000:3000"
+      - '3000:3000'
     env_file:
       - .env
     environment:
@@ -16,7 +16,7 @@ services:
     image: ghcr.io/surrealarts/discord-lirdle-activity:latest
     restart: always
     working_dir: /app/apps/bot
-    entrypoint: ["node", "index.js"]
+    entrypoint: ['node', 'index.js']
     command: node index.js
     env_file:
       - .env

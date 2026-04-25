@@ -2413,7 +2413,7 @@ export const WORDS = [
   'whelk',
   'whorl',
   'xenon',
-  'yucca'
+  'yucca',
 ];
 
 export const OTHERWORDS = [

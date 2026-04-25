@@ -13,5 +13,5 @@ const dbUrl = process.env.DATABASE_URL || `file:${path.join(__dirname, 'dev.db')
 const adapter = new PrismaBetterSqlite3({ url: dbUrl });
 
 export const db = new PrismaClient({
-	adapter
+  adapter,
 });
