@@ -16,36 +16,6 @@ const THIN_BORDER = 2;
 const RADIUS = 6;
 const GAP = 8;
 
-/**
- * Calculates the TRUE score of a guess against the target word
- * Returns an array: 0 (Grey), 1 (Yellow), 2 (Green)
- */
-function calculateTrueScore(guess, target) {
-	const trueScore = [0, 0, 0, 0, 0];
-	const targetLetters = target.split('');
-	const guessLetters = guess.split('');
-
-	// First pass: Greens
-	for (let i = 0; i < 5; i++) {
-		if (guessLetters[i] === targetLetters[i]) {
-			trueScore[i] = 2;
-			targetLetters[i] = null; // Mark as used
-		}
-	}
-
-	// Second pass: Yellows
-	for (let i = 0; i < 5; i++) {
-		if (trueScore[i] === 0) {
-			const index = targetLetters.indexOf(guessLetters[i]);
-			if (index > -1) {
-				trueScore[i] = 1;
-				targetLetters[i] = null; // Mark as used
-			}
-		}
-	}
-	return trueScore;
-}
-
 function getColorCode(scoreValue) {
 	if (scoreValue === 2) return COLORS.GREEN;
 	if (scoreValue === 1) return COLORS.YELLOW;
@@ -71,11 +41,11 @@ function createRoundRectPath(ctx, x, y, w, h, r) {
  * Generates the Lirdle Grid Image
  * @param {Array} guessWords - Array of strings (the words guessed)
  * @param {Array} perceivedScores - Array of arrays (the scores the game SHOWED the user)
- * @param {String} targetWord - The actual answer
+ * @param {Array} changes - The actual lies array from the database session!
  * @param {Boolean} isFinished - Has the user won/given up?
  * @param {Boolean} showLetters - Render the guessed letters inside the blocks
  */
-export async function generateLirdleImage(guessWords, perceivedScores, targetWord, isFinished, showLetters = false) {
+export async function generateLirdleImage(guessWords, perceivedScores, changes, isFinished, showLetters = false) {
 	// Canvas dimensions: 5 columns, N rows (minimum 6)
 	const rows = Math.max(6, guessWords.length);
 	const width = (5 * CELL_SIZE) + (4 * GAP) + 40; // 40px padding
@@ -93,12 +63,7 @@ export async function generateLirdleImage(guessWords, perceivedScores, targetWor
 		const guess = guessWords[row];
 		const perceivedScoreRow = perceivedScores[row];
 
-		let trueScoreRow = [0, 0, 0, 0, 0];
-		if (guess && targetWord) {
-			trueScoreRow = calculateTrueScore(guess, targetWord);
-		} else if (guess && !targetWord) {
-			trueScoreRow = perceivedScoreRow;
-		}
+		const changeLine = (changes && changes[row]) ? changes[row] : null;
 
 		for (let col = 0; col < 5; col++) {
 			const cellX = 20 + (col * (CELL_SIZE + GAP));
@@ -120,8 +85,8 @@ export async function generateLirdleImage(guessWords, perceivedScores, targetWor
 			}
 
 			const perceivedColor = getColorCode(perceivedScoreRow[col]);
-			const trueColor = getColorCode(trueScoreRow[col]);
-			const isLying = perceivedScoreRow[col] !== trueScoreRow[col];
+			const isLying = changeLine && changeLine[0] === col;
+			const trueColor = isLying ? getColorCode(changeLine[1]) : perceivedColor;
 
 			// Render Truth Outer Border
 			if (isFinished && isLying) {
@@ -165,7 +130,7 @@ export async function generateLirdleImage(guessWords, perceivedScores, targetWor
  * Generates a dynamic, auto-scaling grid of players.
  * Used for BOTH Live Spectator and the Midnight Leaderboard.
  */
-export async function generateGridDashboard(players, targetWord, title) {
+export async function generateGridDashboard(players, title) {
 	// Determine Grid Scaling based on Player Count
 	const N = players.length;
 	let cols = Math.min(N, 4);
@@ -266,10 +231,12 @@ export async function generateGridDashboard(players, targetWord, title) {
 
 		let displayGuesses = player.guessWords;
 		let displayScores = player.perceivedScores;
+		let displayChanges = player.changes || [];
 
 		if (showPill) {
 			displayGuesses = player.guessWords.slice(-5);
 			displayScores = player.perceivedScores.slice(-5);
+			displayChanges = (player.changes || []).slice(-5);
 		}
 
 		// Render 6 rows
@@ -295,13 +262,7 @@ export async function generateGridDashboard(players, targetWord, title) {
 			const dataIndex = showPill ? row - 1 : row;
 			const guess = displayGuesses[dataIndex];
 			const perceivedScoreRow = displayScores[dataIndex];
-
-			let trueScoreRow = [0, 0, 0, 0, 0];
-			if (guess && targetWord) {
-				trueScoreRow = calculateTrueScore(guess, targetWord);
-			} else if (guess && !targetWord) {
-				trueScoreRow = perceivedScoreRow;
-			}
+			const changeLine = displayChanges[dataIndex];
 
 			for (let col = 0; col < 5; col++) {
 				const cellX = gridX + (col * (M_CELL + M_GAP));
@@ -319,8 +280,8 @@ export async function generateGridDashboard(players, targetWord, title) {
 				}
 
 				const perceivedColor = getColorCode(perceivedScoreRow[col]);
-				const trueColor = getColorCode(trueScoreRow[col]);
-				const isLying = perceivedScoreRow[col] !== trueScoreRow[col];
+				const isLying = changeLine && changeLine[0] === col;
+				const trueColor = isLying ? getColorCode(changeLine[1]) : perceivedColor;
 
 				if (player.isFinished && isLying) {
 					createRoundRectPath(ctx, blockX - M_BORDER, blockY - M_BORDER, M_BLOCK + (M_BORDER * 2), M_BLOCK + (M_BORDER * 2), M_RAD + 1);

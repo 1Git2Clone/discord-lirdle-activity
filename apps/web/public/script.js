@@ -8,6 +8,13 @@ import { getDateNumber } from "./numbers.js";
 let view = null;
 let model = view;
 
+document.addEventListener('focus', function (e) {
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (isTouchDevice && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+        e.target.blur();
+    }
+}, true);
+
 function initialize() {
     afdCheck();
     view = new View();
@@ -29,22 +36,24 @@ function initialize() {
     }
     if (!model.allDone) {
         const keyboard = document.getElementById("keyboard-cont");
+        const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         document.addEventListener("keyup", (e) => {
+            if (isMobileDevice) {
+                return;
+            }
+
             if (gameFinished) {
                 e.stopPropagation();
                 e.preventDefault();
                 return;
             }
+
+            if (e.isComposing || e.keyCode === 229) {
+                return;
+            }
+
             if (view) {
                 view.keyHandler(e);
-
-                if (e.key === 'Enter' && typeof window.saveLirdleSession === 'function') {
-                    setTimeout(() => {
-                        if (!gameFinished) {
-                            window.saveLirdleSession(model.targetString, model.saveableState, model.stats, false);
-                        }
-                    }, 500);
-                }
             }
             else console.log(`Not handling key ${e.key}`);
         });
@@ -59,14 +68,6 @@ function initialize() {
             } else if (e.target.nodeName === "BUTTON") {
                 const command = e.target.textContent;
                 // view.commandHandler(command);
-
-                if (command === 'enter' && typeof window.saveLirdleSession === 'function') {
-                    setTimeout(() => {
-                        if (!gameFinished) {
-                            window.saveLirdleSession(model.targetString, model.saveableState, model.stats, false);
-                        }
-                    }, 500);
-                }
 
                 if (command) {
                     e.key = command;

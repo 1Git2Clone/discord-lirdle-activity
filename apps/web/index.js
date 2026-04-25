@@ -4,7 +4,10 @@ import dotenvFlow from 'dotenv-flow';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { promises as fs } from 'fs';
+import crypto from 'crypto';
 import { clog } from '@lirdle/logger';
+import { getUniqueWordForUser, evaluateTrueScore } from './utils/prng.js';
+import { lie } from './public/numbers.js';
 
 dotenvFlow.config({ path: '../../' });
 
@@ -18,10 +21,90 @@ const PORT = process.env.WEB_PORT || 3000;
 const CLIENT_ID = process.env.CLIENT_ID.trim();
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 
+const ENCRYPTION_KEY = crypto.createHash('sha256').update(CLIENT_SECRET).digest('base64').substr(0, 32);
+const IV_LENGTH = 16;
+
+function encryptState(data) {
+	const iv = crypto.randomBytes(IV_LENGTH);
+	const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
+	let encrypted = cipher.update(JSON.stringify(data));
+	encrypted = Buffer.concat([encrypted, cipher.final()]);
+	return iv.toString('hex') + ':' + encrypted.toString('hex');
+}
+
+function decryptState(text) {
+	try {
+		const textParts = text.split(':');
+		const iv = Buffer.from(textParts.shift(), 'hex');
+		const encryptedText = Buffer.from(textParts.join(':'), 'hex');
+		const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
+		let decrypted = decipher.update(encryptedText);
+		decrypted = Buffer.concat([decrypted, decipher.final()]);
+		return JSON.parse(decrypted.toString());
+	} catch (error) {
+		console.error('[apps/web/index.js] Error decrypting state:', error);
+		return []; // Return empty state on decryption failure
+	}
+}
+
 app.use(cors());
 app.use(express.json());
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.post('/api/guess', async (req, res) => {
+	try {
+		const { userId, guessString, lettersByPosition, changes, encryptedChanges, solverData } = req.body;
+
+		let user = await db.user.findUnique({ where: { id: userId } });
+		if (!user) {
+			user = await db.user.create({
+				data: {
+					id: userId,
+					gamesPlayed: 0,
+					seed: crypto.randomUUID()
+				}
+			});
+		}
+
+		const targetWord = getUniqueWordForUser(user.seed, user.gamesPlayed);
+		const trueScores = evaluateTrueScore(targetWord, guessString);
+		const guessedIt = guessString === targetWord;
+
+		let parsedChanges = [];
+		if (encryptedChanges) {
+			parsedChanges = decryptState(encryptedChanges);
+		} else if (typeof changes === 'string') {
+			parsedChanges = decryptState(changes);
+		} else if (Array.isArray(changes)) {
+			parsedChanges = changes;
+		} 
+		let finalScores = [...trueScores];
+		let newChanges = [...parsedChanges];
+
+		if (!guessedIt) {
+			lie(guessString, finalScores, lettersByPosition, newChanges, solverData);
+		}
+
+		let outgoingChanges;
+		if (guessedIt) {
+			outgoingChanges = newChanges;
+		} else {
+			outgoingChanges = encryptState(newChanges);
+		}
+
+		res.json({
+			guessedIt: guessedIt,
+			scores: finalScores,
+			changes: outgoingChanges,
+			encryptedChanges: guessedIt ? null : encryptState(newChanges) 
+		}); 
+
+	} catch (error) {
+		clog(console.error, '[apps/web/index.js] Error processing guess:', error);
+		res.status(500).json({ error: 'Server error processing guess' });
+	}
+});
 
 app.post('/api/token', async (req, res) => {
 	try {
@@ -48,11 +131,11 @@ app.post('/api/token', async (req, res) => {
 
 app.post('/api/save-session', async (req, res) => {
 	try {
-		const { userId, date, targetWord, guesses, won, stats } = req.body || {};
+		const { userId, date, guesses, won, stats } = req.body || {};
 		// TODO: Remove for debug
 		// clog(console.log, `[apps/web/index.js] save-session payload:`, { userId, date, targetWord, hasGuesses: !!guesses, won, statsKeys: stats ? Object.keys(stats) : null });
 
-		if (!userId || !date || !targetWord || !guesses) {
+		if (!userId || !date || !guesses) {
 			return res.status(400).json({
 				error: 'Missing required fields',
 				body: req.body
@@ -66,24 +149,29 @@ app.post('/api/save-session', async (req, res) => {
 			update: {},
 			create: {
 				date: date,
-				word: targetWord
+				word: "SECRET_PRNG"
 			}
 		});
+
+		const existingSession = await db.session.findUnique({
+			where: { userId_date: { userId, date } }
+		});
+		const isFirstWin = won && (!existingSession || !existingSession.won);
 
 		await db.user.upsert({
 			where: { id: userId },
 			update: {
-				gamesPlayed: stats?.totalFinishedGames || 1,
-				wins: won ? { increment: 1 } : undefined,
-				currentStreak: stats?.totalFinishedGames || 1,
-				maxStreak: stats?.highestScore || 1
+				gamesPlayed: isFirstWin ? { increment: 1 } : undefined,
+				wins: isFirstWin ? { increment: 1 } : undefined,
+				maxStreak: stats?.highestScore || undefined
 			},
 			create: {
 				id: userId,
-				gamesPlayed: 1,
+				gamesPlayed: won ? 1 : 0,
 				wins: won ? 1 : 0,
-				currentStreak: 1,
-				maxStreak: 1
+				currentStreak: won ? 1 : 0,
+				maxStreak: stats?.highestScore || 0,
+				seed: crypto.randomUUID()
 			}
 		});
 

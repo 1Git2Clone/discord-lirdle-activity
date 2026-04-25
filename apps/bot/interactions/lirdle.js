@@ -88,9 +88,7 @@ export const run = async (client, interaction) => {
 					};
 				});
 
-				const targetWord = activeSessions.length > 0 ? activeSessions[0].dailyWord?.word : null;
-
-				const imageBuffer = await generateGridDashboard(activePlayers, targetWord, "🔴 LIVE LIRDLE SPECTATOR");
+				const imageBuffer = await generateGridDashboard(activePlayers, "🔴 LIVE LIRDLE SPECTATOR");
 				const attachment = new AttachmentBuilder(imageBuffer, { name: 'lirdle-live.png' });
 
 				const liveEmbed = new EmbedBuilder()

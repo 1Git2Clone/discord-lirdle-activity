@@ -1,4 +1,5 @@
 // Copyright (C) 2023 Bovination Productions, MIT License
+// Revamped for Discord Activity 2026
 
 import { WORDS } from "./words.js";
 import * as perturb from './perturb.js';

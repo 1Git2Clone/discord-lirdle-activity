@@ -2,7 +2,7 @@
 // Revamped for Discord Activity 2026
 
 import { WORDS, OTHERWORDS } from "./words.js";
-import { devMode, getDateNumber, getWordNumber, lie } from "./numbers.js";
+import { devMode, getDateNumber } from "./numbers.js";
 import Stats from "./stats.js";
 import { getSolverData, updateSolver } from './solver.js';
 
@@ -23,12 +23,12 @@ const CHARGE_NON_WORD = 2;
 export default function Model(view) {
     this.saveableState = {
         changes: [],
+        encryptedChanges: null,
         date: null,
         finished: false,
         guessWords: [],
         numBoardRows: INIT_NUM_ROWS,
         scores: [],
-        wordNumber: -1,
         numDuplicateWordsEarned: 0,
         numNonWordsEarned: 0,
         markers: [],
@@ -123,7 +123,6 @@ Model.prototype = {
             throw new Error(`Ignoring unfinished work from ${savedState.date}`);
         }
         Object.assign(this.saveableState, savedState);
-        this.targetString = WORDS[this.saveableState.wordNumber];
         if (this.saveableState.numBoardRows < this.saveableState.guessWords.length) {
             this.saveableState.numBoardRows = this.saveableState.guessWords.length;
         }
@@ -207,7 +206,7 @@ Model.prototype = {
             localStorage.setItem('saveableState', JSON.stringify(this.saveableState));
         } catch (ex) {
             console.log(`can't set local storage: ${ex}`);
-            alert(`can't set local storage: ${ex}`);
+            // alert(`can't set local storage: ${ex}`);
         }
     },
     saveStats() {
@@ -232,14 +231,13 @@ Model.prototype = {
 
     defaultInitSavableState() {
         this.saveableState.changes = [];
+        this.saveableState.encryptedChanges = null;
         this.saveableState.date = getDateNumber();
         this.saveableState.guessWords = [];
         this.saveableState.numBoardRows = INIT_NUM_ROWS;
         this.saveableState.scores = [];
-        this.saveableState.wordNumber = getWordNumber(this.saveableState.date);
         this.saveableState.numDuplicateWordsEarned  = 0;
         this.saveableState.numNonWordsEarned  = 0;
-        this.targetString = WORDS[this.saveableState.wordNumber];
         doFetch('start', { date: this.saveableState.date });
         // console.log(`Secret string is ${this.targetString}`);
     },
@@ -249,7 +247,6 @@ Model.prototype = {
         this.guessCount = 0;
         this.nextLetterPosition = 0;
         this.scoresByLetter = {};
-        this.targetString = '';
         this.isInvalidWord = false;
         this.isNonTargetWord = false;
         this.chargeInvalidWord = 0; // 1: charge dup, 2: charge non-word
@@ -262,7 +259,7 @@ Model.prototype = {
         this.solverData = getSolverData();
     },
 
-    checkGuess() {
+    async checkGuess() {
         const guessString = this.currentGuess.join('');
         if (guessString.length !== 5) {
             return;
@@ -278,6 +275,7 @@ Model.prototype = {
             this.chargeInvalidWord = CHARGE_NONE
             this.view.clearInvalidWordPrompt('dupWordHint');
             this.view.updateHintCounts({numDuplicateWordsEarned: this.saveableState.numDuplicateWordsEarned});
+            return;
         } else if (this.chargeInvalidWord === CHARGE_NON_WORD && this.saveableState.numNonWordsEarned > 0) {
             doFetch('chargeNonWordHint', {
                 date: this.saveableState.date,
@@ -289,6 +287,7 @@ Model.prototype = {
             this.chargeInvalidWord = CHARGE_NONE;
             this.view.clearInvalidWordPrompt('nonWordHint');
             this.view.updateHintCounts({numNonWordsEarned: this.saveableState.numNonWordsEarned});
+            return;
         } else if (this.isInvalidWord) {
             return;
         } else if (!WORDS.includes(guessString) && !OTHERWORDS.includes(guessString)) {
@@ -298,95 +297,104 @@ Model.prototype = {
             return;
         }
 
-        this.saveableState.guessWords.push(guessString);
-        const scores = this.evaluateGuessAtModel(this.targetString, this.currentGuess);
-        const guessedIt = guessString === this.targetString;
-        let newScores;
-        if (guessedIt) {
-            newScores = scores;
-            this.stats.addFinishedGame(this.saveableState.guessWords.length);
-            this.saveStats();
-        } else {
-            newScores = [].concat(scores);
-            lie(guessString, newScores, this.lettersByPosition, this.saveableState.changes, this.solverData);
-        }
-        for (let i = 0; i < 5; i++) {
-            this.addColorHit(this.currentGuess[i], newScores[i]);
-            this.addLetterPosition(i, guessString[i], newScores[i]);
-        }
-        this.saveableState.scores.push(newScores);
-        this.view.enterScoredGuess(guessString, newScores, this.guessCount, guessedIt, false);
-        this.guessCount += 1;
-        this.isNonTargetWord = false;
+        try {
+            const payload = {
+                userId: window.DISCORD_USER_ID,
+                guessString: guessString,
+                lettersByPosition: this.lettersByPosition,
+                changes: this.saveableState.changes,
+                encryptedChanges: this.saveableState.encryptedChanges,
+                solverData: this.solverData
+            };
 
-        if (guessedIt) {
-            this.saveableState.finished = true;
-            this.view.showTheWin(this.guessCount, this.saveableState.changes);
-            this.doneFunc();
-            if (!this.prefs.showNumLeft) {
-                const sd = this.solverData;
-                for (let i = 0; i < sd.level; i++) {
-                    this.view.showOrHideNumLeftForRow(true, i);
+            const response = await fetch('/api/guess', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error("Network response was not ok");
+
+            const { guessedIt, scores: newScores, changes: realChanges, encryptedChanges: newEncrypted } = await response.json();
+
+            this.saveableState.guessWords.push(guessString);
+
+            if (guessedIt) {
+                this.saveableState.changes = realChanges;
+                this.saveableState.encryptedChanges = null;
+            } else {
+                this.saveableState.changes = [];
+                this.saveableState.encryptedChanges = newEncrypted;
+            }
+
+            if (guessedIt) {
+                this.stats.addFinishedGame(this.saveableState.guessWords.length);
+                this.saveStats();
+            }
+
+            for (let i = 0; i < 5; i++) {
+                this.addColorHit(this.currentGuess[i], newScores[i]);
+                this.addLetterPosition(i, guessString[i], newScores[i]);
+            }
+
+            this.saveableState.scores.push(newScores);
+            this.view.enterScoredGuess(guessString, newScores, this.guessCount, guessedIt, false);
+            this.guessCount += 1;
+            this.isNonTargetWord = false;
+
+            if (guessedIt) {
+                this.saveableState.finished = true;
+                this.view.showTheWin(this.guessCount, this.saveableState.changes);
+                this.doneFunc();
+                if (!this.prefs.showNumLeft) {
+                    const sd = this.solverData;
+                    for (let i = 0; i < sd.level; i++) {
+                        this.view.showOrHideNumLeftForRow(true, i);
+                    }
                 }
+                doFetch('finished', { date: this.saveableState.date, count: this.guessCount });
+            } else {
+                if (this.guessCount >= this.saveableState.numBoardRows) {
+                    this.view.appendBoardRow();
+                    this.saveableState.numBoardRows += 1;
+                }
+                const intervalUpdates = {};
+                if (this.guessCount % DUPLICATE_WORD_INTERVAL === 0) {
+                    this.saveableState.numDuplicateWordsEarned += 1;
+                    intervalUpdates.numDuplicateWordsEarned = this.saveableState.numDuplicateWordsEarned;
+                }
+                if (this.guessCount % NON_WORD_INTERVAL === 0) {
+                    this.saveableState.numNonWordsEarned += 1;
+                    intervalUpdates.numNonWordsEarned = this.saveableState.numNonWordsEarned;
+                }
+                if (Object.keys(intervalUpdates).length > 0) {
+                    this.view.updateHintCounts(intervalUpdates);
+                }
+                if (newScores.every(x => x === 2)) {
+                    // We have a fakeout
+                    this.stats.addFiveGreenFakeOut();
+                    this.view.showHitFakeOut(); //TODO: Implement
+                }
+                //const t1 = (new Date()).valueOf();
+                updateSolver(this.saveableState.guessWords, this.saveableState.scores, this.solverData);
+                this.view.showOrHideNumLeftForRow(this.prefs.showNumLeft, this.solverData.level - 1);
+                this.view.updateShowNumLeft(this.prefs.showNumLeft, this.solverData.level - 1, this.solverData.possibleWords.length);
+                doFetch('guess', { date: this.saveableState.date, count: this.guessCount, numLeft: this.solverData.possibleWords.length });
+                // const t2 = (new Date()).valueOf();
+                // console.log(`calc time: ${ t2 - t1 } msec`)
             }
-            doFetch('finished', { date: this.saveableState.date, count: this.guessCount });
-        } else {
-            if (this.guessCount >= this.saveableState.numBoardRows) {
-                this.view.appendBoardRow();
-                this.saveableState.numBoardRows += 1;
-            }
-            const intervalUpdates = {};
-            if (this.guessCount % DUPLICATE_WORD_INTERVAL === 0) {
-                this.saveableState.numDuplicateWordsEarned += 1;
-                intervalUpdates.numDuplicateWordsEarned = this.saveableState.numDuplicateWordsEarned;
-            }
-            if (this.guessCount % NON_WORD_INTERVAL === 0) {
-                this.saveableState.numNonWordsEarned += 1;
-                intervalUpdates.numNonWordsEarned = this.saveableState.numNonWordsEarned;
-            }
-            if (Object.keys(intervalUpdates).length > 0) {
-                this.view.updateHintCounts(intervalUpdates);
-            }
-            if (newScores.every(x => x === 2)) {
-                // We have a fakeout
-                this.stats.addFiveGreenFakeOut();
-                this.view.showHitFakeOut(); //TODO: Implement
-            }
-            //const t1 = (new Date()).valueOf();
-            updateSolver(this.saveableState.guessWords, this.saveableState.scores, this.solverData);
-            this.view.showOrHideNumLeftForRow(this.prefs.showNumLeft, this.solverData.level - 1);
-            this.view.updateShowNumLeft(this.prefs.showNumLeft, this.solverData.level - 1, this.solverData.possibleWords.length);
-            doFetch('guess', { date: this.saveableState.date, count: this.guessCount, numLeft: this.solverData.possibleWords.length });
-            // const t2 = (new Date()).valueOf();
-            // console.log(`calc time: ${ t2 - t1 } msec`)
-        }
-        this.currentGuess = [];
-        this.nextLetterPosition = 0;
-        this.updateSaveableState();
-    },
-    evaluateGuessAtModel(targetWord, guess) {
-        const target = Array.from(targetWord);
-        const myGuess = Array.from(guess);
-        const scores = [0, 0, 0, 0, 0];
 
-        // Issue #19: find the perfect hits first!
-        for (let i = 0; i < 5; i++) {
-            if (myGuess[i] === target[i]) {
-                scores[i] = 2;
-                myGuess[i] = target[i] = '#';
+            this.currentGuess = [];
+            this.nextLetterPosition = 0;
+            this.updateSaveableState();
+
+            if (!this.saveableState.finished && typeof window.saveLirdleSession === 'function') {
+                window.saveLirdleSession(null, this.saveableState, this.stats, false);
             }
+
+        } catch (error) {
+            console.error("Failed to check guess with server:", error);
         }
-        for (let i = 0; i < 5; i++) {
-            if (myGuess[i] === '#') {
-                continue;
-            }
-            let letterPosition = target.indexOf(myGuess[i]);
-            if (letterPosition !== -1) {
-                scores[i] = 1;
-                target[letterPosition] = "#";
-            }
-        }
-        return scores;
     },
 
     addColorHit(letter, score) {
@@ -418,7 +426,7 @@ Model.prototype = {
     },
 
     deleteLetter() {
-        if (this.currentGuess === 0) {
+        if (this.nextLetterPosition === 0) {
             return;
         }
         this.view.deleteLetter(this.guessCount, this.nextLetterPosition - 1);
@@ -439,6 +447,9 @@ Model.prototype = {
     },
 
     insertLetter(pressedKey) {
+        if (this.nextLetterPosition >= 5) {
+            return;
+        }
         const rowNum = this.guessCount;
         const colNum = this.nextLetterPosition;
         this.view.insertLetter(pressedKey, rowNum, colNum);
@@ -520,10 +531,10 @@ Model.prototype = {
 };
 
 function doFetch(endpoint, options) {
-    if (('date' in options) && typeof(options.date) == 'number') {
+    if (('date' in options) && typeof (options.date) == 'number') {
         options.date = getInternalDateNumber(options.date);
     }
-    fetch(`/usage/${ endpoint }?${ new URLSearchParams(options) }`).then((response) => {
+    fetch(`/usage/${endpoint}?${new URLSearchParams(options)}`).then((response) => {
         // ignore the response
     }).catch((err) => {
         // yeah, ignore this too

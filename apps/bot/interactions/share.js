@@ -33,11 +33,12 @@ export const run = async (client, interaction) => {
 		const state = JSON.parse(session.guesses || '{}');
 		const guessWords = Array.isArray(state.guessWords) ? state.guessWords : [];
 		const perceivedScores = Array.isArray(state.scores) ? state.scores : [];
+		const changes = Array.isArray(state.changes) ? state.changes : [];
 
 		const imageBuffer = await generateLirdleImage(
 			guessWords,
 			perceivedScores,
-			session.dailyWord?.word,
+			changes,
 			true
 		);
 		const attachment = new AttachmentBuilder(imageBuffer, { name: 'lirdle-share.png' });

@@ -70,6 +70,8 @@ async function setupDiscord() {
 		const authResult = await authenticateWithRetry(clientId);
 		discordUser = authResult.user;
 
+		window.DISCORD_USER_ID = discordUser.id;
+
 		const today = new Date().toISOString().split('T')[0];
 		const syncRes = await fetch(`/api/load-session?userId=${discordUser.id}&date=${today}`);
 
@@ -79,7 +81,6 @@ async function setupDiscord() {
 
 			if (!syncData.session) {
 				try {
-					localStorage.removeItem('gameState');
 					localStorage.removeItem('saveableState');
 					console.log("DB is empty for today. Local board wiped.");
 				} catch (storageErr) {
@@ -91,7 +92,7 @@ async function setupDiscord() {
 						const guessesStr = typeof syncData.session.guesses === 'string'
 							? syncData.session.guesses
 							: JSON.stringify(syncData.session.guesses);
-						localStorage.setItem('gameState', guessesStr);
+						localStorage.setItem('saveableState', guessesStr);
 					}
 					if (syncData.session && syncData.session.stats) {
 						const statsStr = typeof syncData.session.stats === 'string'
