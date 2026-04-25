@@ -18,6 +18,11 @@ export const version = process.env.VERSION;
 export const logWithTime = process.env.LOG_WITH_TIME !== 'false';
 export const logTimezone = process.env.LOG_TIMEZONE || 'UTC';
 
+/**
+ * Validates that required environment variables are set.
+ * Exits the process with code 1 if essential vars (CLIENT_ID, TOKEN) are missing.
+ * Logs a warning for non-essential missing vars (VERSION).
+ */
 function validateConfig() {
   const missing = { essential: [], nonEssential: [] };
 

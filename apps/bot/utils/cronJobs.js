@@ -3,6 +3,12 @@ import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
 import { clog } from '@lirdle/logger';
 import { generateGridDashboard } from './imageGenerator.js';
 
+/**
+ * Schedule daily cron jobs. Runs a midnight leaderboard that fetches each
+ * guild's completed sessions for the previous day and posts a summary image
+ * to their active channel. Uses node-cron with UTC timezone.
+ * @param {import('discord.js').Client} client - Discord client instance
+ */
 export const startCronJobs = (client) => {
   // '0 0 * * *' = Runs at minute 0, hour 0 (Midnight UTC) every single day
   cron.schedule(

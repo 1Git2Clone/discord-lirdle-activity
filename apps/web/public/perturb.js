@@ -1,9 +1,13 @@
 /**
- * returns a good answer, tries not to give away too much too often
- * @param guessWord
- * @param scores
- * @param lettersByPosition - { color: <string or array of strings> }
- * @return [position, direction (-1 or +1)
+ * Suggest a hint by perturbing one position's score. Picks a random
+ * starting position and direction (increase or decrease), then falls
+ * back to a weighted random selection across all 10 possible moves
+ * if the initial pick would create a contradiction. Weights favor
+ * moves with lower contradiction scores to avoid giving away the answer.
+ * @param {string} guessWord - The current guessed word
+ * @param {number[]} scores - Current perceived scores (0/1/2 per position)
+ * @param {{ green?: Object.<string, string[]>, assignments?: Object.<string, [number, number][]>, black?: Object.<string, number>, yellow?: Object.<string, number> }} lettersByPosition - Letter position tracking
+ * @returns {[number, number]} [position, direction] where direction is -1 (decrease) or +1 (increase)
  */
 
 export function perturb(guessWord, scores, lettersByPosition) {
@@ -40,6 +44,17 @@ export function perturb(guessWord, scores, lettersByPosition) {
   return directives[index];
 }
 
+/**
+ * Score how contradictory a proposed hint directive would be.
+ * Checks against existing green/yellow/black position data and
+ * previously assigned directives for the same word. Returns a
+ * higher score for moves that conflict with known information.
+ * @param {string} guessWord - The current guessed word
+ * @param {number[]} scores - Current perceived scores
+ * @param {Object} lettersByPosition - Position tracking data
+ * @param {[number, number]} directive - [position, direction] to check
+ * @returns {number} Contradiction score (0 = safe, 9 = maximum contradiction)
+ */
 export function scoreContradiction(guessWord, scores, lettersByPosition, directive) {
   const greenLettersByPosition = lettersByPosition.green; // array of strings
   const directivesByWord = lettersByPosition.assignments; // hash of string => array of directives

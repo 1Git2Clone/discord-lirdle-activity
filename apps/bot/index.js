@@ -40,6 +40,11 @@ client.once('clientReady', async () => {
 
   const commands = [];
 
+  /**
+   * Recursively find all .js files in a command directory.
+   * @param {string} dir - Directory path to search
+   * @returns {string[]} Array of file paths
+   */
   const getCommandFiles = (dir) => {
     const entries = readdirSync(dir, { withFileTypes: true });
     const files = [];

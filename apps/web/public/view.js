@@ -2,6 +2,12 @@
 
 import { devMode, getDateNumber, getYesterdaysWord } from './numbers.js';
 
+/**
+ * @constructor
+ * View layer for the Lirdle game board. Manages all DOM interactions:
+ * rendering the letter grid, on-screen keyboard coloring, win/deception
+ * displays, hints panel, and stats overlays.
+ */
 export default function View() {
   this.board = document.getElementById('game-board');
   this.dupWord = document.getElementById('dupWord');
@@ -15,6 +21,13 @@ export default function View() {
   this.gameFinished = false;
 }
 
+/**
+ * Left-pad a value to a minimum string length.
+ * @param {string|number} val - Value to pad
+ * @param {number} minSize - Minimum output length
+ * @param {string} padChar - Character to pad with
+ * @returns {string} Padded string
+ */
 function pad(val, minSize, padChar) {
   let s = val.toString();
   while (s.length < minSize) {
@@ -27,13 +40,23 @@ const COLORS = ['grey', 'yellow', 'green'];
 const NEUTRAL_COLOR = 'white';
 
 View.prototype = {
+  /** @param {Object} model - Model instance */
   setModel(model) {
     this.model = model;
   },
+  /** Post-initialization setup: show yesterday's word stats. */
   setModelContinue() {
     this.showYesterdaysWord();
     // this.initializeTheme(this.model.prefs.theme);
   },
+  /**
+   * Restore the board to a previously saved state, including guess words,
+   * scores, and truth/lie marker classes on each letter box.
+   * @param {number} numNeededRows - Number of board rows to initialize
+   * @param {string[]} guessWords - Array of guessed words
+   * @param {number[][]} scores - Array of score arrays per guess
+   * @param {string[][]} markers - Array of marker strings per box
+   */
   populateBoardFromSaveableState(numNeededRows, guessWords, scores, markers) {
     this.initBoard(numNeededRows);
     const rows = this.board.querySelectorAll('div.letter-row');
@@ -68,6 +91,10 @@ View.prototype = {
     }
   },
 
+  /**
+   * Cycle truth/lie markers on a filled letter box: none → lie → perceived truth.
+   * @param {MouseEvent} e - Click event on a letter box
+   */
   handleLetterBoxClick(e) {
     if (this.gameFinished) {
       e.stopPropagation();
@@ -92,6 +119,7 @@ View.prototype = {
     this.model.updateSaveableState();
   },
 
+  /** Add a new empty row to the board grid, with letter boxes and num-left container. */
   appendBoardRow() {
     const letterRowContainer = document.createElement('div');
     letterRowContainer.className = 'letter-row-container';
@@ -142,6 +170,12 @@ View.prototype = {
     }
   },
 
+  /**
+   * Display the win UI: result message, deceptive squares, stats,
+   * disable keyboard, start countdown timer.
+   * @param {number} guessCount - How many guesses the player took
+   * @param {Array} changes - Array of deceptive score changes
+   */
   showTheWin(guessCount, changes) {
     this.showWinningInfo(guessCount);
     this.showDeceptiveSquares(changes);
@@ -156,6 +190,10 @@ View.prototype = {
     );
   },
 
+  /**
+   * Show "You got it in N guesses!" message above the board.
+   * @param {number} guessCount - Number of guesses taken
+   */
   showWinningInfo(guessCount) {
     const msg = `You got it in ${guessCount} guess${guessCount > 1 ? 'es' : ''}!`;
     const result = document.getElementById('result');
@@ -171,6 +209,7 @@ View.prototype = {
     result.classList.add('show');
   },
 
+  /** Show the countdown timer until the next puzzle is available. */
   showAllDone() {
     const msg = `until next game`;
     const allDone = document.getElementById('alldone');
@@ -208,6 +247,11 @@ View.prototype = {
    * changes: array of [index, actualResult, displayedResult]
    * @param changes
    */
+  /**
+   * Highlight squares where the score was deceptive by adding
+   * color classes (actualGreen, actualYellow, actualGrey).
+   * @param {Array} changes - Array of [position, trueScore, displayedScore]
+   */
   showDeceptiveSquares(changes) {
     for (let i = 0; i < changes.length; i++) {
       const rowContainer = this.board.children.item(i);
@@ -223,6 +267,7 @@ View.prototype = {
     }
   },
 
+  /** Convert num-left amounts into clickable buttons that show the list of remaining words. */
   activateWordsLeftLink() {
     const numLeftContainers = this.board.querySelectorAll(
       '.letter-row-container .numWordsLeftContainer',
@@ -251,6 +296,12 @@ View.prototype = {
     }
   },
 
+  /**
+   * Display a modal panel listing all words that could still be the
+   * answer for a given row. Filters out the target word from the list.
+   * @param {MouseEvent} event - Click event from the num-left button
+   * @param {number} i - Row index
+   */
   showMatchedWords(event, i) {
     const solverData = this.model.solverData;
     if (i >= solverData.remainingWords.length) {
@@ -302,6 +353,7 @@ View.prototype = {
     matchingWordsPanel.classList.add('show');
   },
 
+  /** Show the statistics overlay if there are enough games played (more than 2). */
   showStats() {
     const stats = this.model.stats;
     if (stats.totalUnfinishedGames <= 2 && stats.totalFinishedGames <= 2) {
@@ -320,6 +372,12 @@ View.prototype = {
     statsDiv.classList.add('show');
   },
 
+  /**
+   * Toggle the visual invalid-word warning for the current row.
+   * @param {number} rowNum - Current board row
+   * @param {boolean} wordIsInvalid - Whether the word is invalid
+   * @param {string} [guessString] - The invalid word for display
+   */
   changeInvalidWordState(rowNum, wordIsInvalid, guessString) {
     if (this.wordIsInvalid !== wordIsInvalid) {
       if (!this.wordIsInvalid) {
@@ -338,6 +396,11 @@ View.prototype = {
     }
   },
 
+  /**
+   * Toggle the visual secondary-word (valid but not a target) warning.
+   * @param {boolean} wordIsNonTarget - Whether to show the warning
+   * @param {string} [guessString=''] - The guessed word
+   */
   changeNonTargetWordState(wordIsNonTarget, guessString = '') {
     if (this.wordIsNonTarget !== wordIsNonTarget) {
       if (!this.wordIsNonTarget) {
@@ -353,6 +416,10 @@ View.prototype = {
     }
   },
 
+  /**
+   * Show a hint prompt element (duplicate-word or non-word).
+   * @param {string} promptID - Element ID of the prompt
+   */
   showInvalidWordPrompt(promptID) {
     const elt = document.getElementById(promptID);
     if (elt) {
@@ -361,6 +428,10 @@ View.prototype = {
     }
   },
 
+  /**
+   * Hide one or all invalid word prompts.
+   * @param {string} [promptID=''] - Specific prompt to clear, or empty to clear all
+   */
   clearInvalidWordPrompt(promptID = '') {
     const elts = promptID
       ? [document.getElementById(promptID)]
@@ -373,6 +444,7 @@ View.prototype = {
     }
   },
 
+  /** Show a transient "Five-Green Fake-Out" notification that auto-hides after 10 seconds. */
   showHitFakeOut() {
     const elt = document.getElementById('fiveGreenFakeOut');
     if (elt) {
@@ -387,6 +459,7 @@ View.prototype = {
     }
   },
 
+  /** @param {number} rowNum - Row to mark invalid */
   markCurrentWordInvalid(rowNum) {
     const row = this.board
       .querySelectorAll('.letter-row-container')
@@ -398,6 +471,7 @@ View.prototype = {
     }
   },
 
+  /** @param {number} rowNum - Row to unmark invalid */
   markCurrentWordValid(rowNum) {
     const row = this.board
       .querySelectorAll('.letter-row-container')
@@ -409,12 +483,14 @@ View.prototype = {
     }
   },
 
+  /** @param {number} numNeededRows - Ensure the board has at least this many rows */
   initBoard(numNeededRows) {
     for (let i = this.board.childElementCount; i < numNeededRows; i++) {
       this.appendBoardRow();
     }
   },
 
+  /** Remove all rows from the board and reset keyboard colors. */
   clearBoard() {
     if (!this.board) {
       console.log('No board in clearBoard!');
@@ -428,6 +504,14 @@ View.prototype = {
     }
   },
 
+  /**
+   * Animate scoring a guess row by coloring each letter box and keyboard key.
+   * @param {string} currentGuess - The guessed word
+   * @param {number[]} scores - Score array (0/1/2 per position)
+   * @param {number} guessCount - Row index
+   * @param {boolean} guessedIt - Whether the guess was correct
+   * @param {boolean} immediate - Skip animation delay
+   */
   enterScoredGuess(currentGuess, scores, guessCount, guessedIt, immediate) {
     const row = document.getElementsByClassName('letter-row')[guessCount];
     const limit = 5;
@@ -449,6 +533,11 @@ View.prototype = {
     enterScoredGuessForEntry(0);
   },
 
+  /**
+   * Remove a letter from the board at the given position.
+   * @param {number} rowNum - Row index
+   * @param {number} colNum - Column index (0-4)
+   */
   deleteLetter(rowNum, colNum) {
     let row = document.getElementsByClassName('letter-row')[rowNum];
     let box = row.children[colNum];
@@ -456,6 +545,12 @@ View.prototype = {
     box.classList.remove('filled-box', 'show-lie', 'show-perceived-truth');
   },
 
+  /**
+   * Insert a letter into a board cell.
+   * @param {string} pressedKey - The letter to insert
+   * @param {number} rowNum - Row index
+   * @param {number} colNum - Column index (0-4)
+   */
   insertLetter(pressedKey, rowNum, colNum) {
     pressedKey = pressedKey.toLowerCase();
 
@@ -465,6 +560,14 @@ View.prototype = {
     box.classList.add('filled-box');
   },
 
+  /**
+   * Update the on-screen keyboard key color based on the letter's score.
+   * Green > Yellow > Light blue for non-correct hits.
+   * @param {string} letter - The letter to shade
+   * @param {string} color - CSS color string
+   * @param {boolean} guessIt - Whether the guess was correct
+   * @param {number[]} numHitsForEachScore - Hit counts per score type
+   */
   shadeKeyboard(letter, color, guessIt, numHitsForEachScore) {
     for (const elem of document.getElementsByClassName('keyboard-button')) {
       if (elem.textContent === letter) {
@@ -483,6 +586,11 @@ View.prototype = {
     }
   },
 
+  /**
+   * Handle keyboard input: letters, Backspace/Del, and Enter.
+   * Delegates to model methods for game logic.
+   * @param {KeyboardEvent} e - Keyboard event
+   */
   keyHandler(e) {
     // console.log('>> keyup');
     const pressedKey = String(e.key);
@@ -514,6 +622,10 @@ View.prototype = {
       console.log(`Lirdle: ignoring key event ${pressedKey}`);
     }
   },
+  /**
+   * Fetch and display yesterday's word and its aggregate stats
+   * (percentage finished, average tries) from the stats API.
+   */
   showYesterdaysWord() {
     if (!devMode()) {
       const yesterdaysWord = getYesterdaysWord();
@@ -552,6 +664,10 @@ View.prototype = {
       intervalPID = setInterval(fetchFunc, 30 * 60000);
     }
   },
+  /**
+   * Fetch and display today's aggregate stats (percentage finished,
+   * average tries) from the stats API. Polls every 10 minutes.
+   */
   showTodaysStats() {
     let numTriesNeededHere = this.model.saveableState.guessWords.length || 0;
     const todaysStatsElt = document.getElementById('todaysStats');
@@ -599,6 +715,7 @@ View.prototype = {
     fetchFunc();
     intervalPID = setInterval(fetchFunc, 10 * 60000);
   },
+  /** Load and display the weekly testimonial from the teaser file. */
   showTestimonial() {
     const currentDateNumber = getInternalDateNumber(getDateNumber());
     const currentWeekNum = pad(Math.floor(currentDateNumber / 7), 3, '0');
@@ -625,9 +742,19 @@ View.prototype = {
         this.showOnOff(liTOTW, false);
       });
   },
+  /**
+   * Sanitize text for safe HTML insertion (escape &, <, and newlines).
+   * @param {string} txt - Raw text
+   * @returns {string} HTML-safe text
+   */
   sanitize(txt) {
     return txt.trim().replace('&', '&amp;').replace('<', '&lt;').replace(/\r?\n/, '<br />');
   },
+  /**
+   * Toggle show/hide CSS classes on a DOM node.
+   * @param {HTMLElement} node - DOM element
+   * @param {boolean} showNode - True to show, false to hide
+   */
   showOnOff(node, showNode) {
     if (showNode) {
       node.classList.add('show');
@@ -638,6 +765,7 @@ View.prototype = {
     }
   },
 
+  /** Show browser-specific promo blurbs based on user-agent detection. */
   doBlurbs() {
     const useragent = navigator.userAgent.toLowerCase();
     const vendor = navigator.vendor;
@@ -683,6 +811,10 @@ View.prototype = {
   //         "beforeend",
   //         `<link rel="stylesheet" class="theme" href="styles/${ theme }.css" />`);
   // },
+  /**
+   * Update hint count displays in the hints panel.
+   * @param {Object} values - Key-value pairs of hint counts to update
+   */
   updateHintCounts(values) {
     const hintsBlock = document.querySelector('div#hintsBlock');
     if (hintsBlock) {
@@ -694,6 +826,11 @@ View.prototype = {
       }
     }
   },
+  /**
+   * Show or hide the "number of possible words remaining" label
+   * on all filled rows.
+   * @param {boolean} checked - True to show
+   */
   showOrHideNumLeft(checked) {
     const rowContainers = Array.from(this.board.querySelectorAll('div.letter-row-container'));
     let firstBlankRow = rowContainers.findIndex(
@@ -716,6 +853,11 @@ View.prototype = {
       node.classList.remove(classToHide);
     }
   },
+  /**
+   * Show or hide the num-left label for a specific row.
+   * @param {boolean} checked - True to show
+   * @param {number} rowNum - Row index
+   */
   showOrHideNumLeftForRow(checked, rowNum) {
     const rowContainer = this.board.querySelectorAll('div.letter-row-container').item(rowNum);
     const node = rowContainer.querySelector('div.numWordsLeftContainer');
@@ -728,6 +870,12 @@ View.prototype = {
     node.classList.remove(classToHide);
   },
 
+  /**
+   * Update the displayed number of possible words for a row.
+   * @param {boolean} checked - Whether the num-left display is active
+   * @param {number} rowNum - Row index
+   * @param {number} numLeft - Number of possible words remaining
+   */
   updateShowNumLeft(checked, rowNum, numLeft) {
     const rowContainer = this.board.querySelectorAll('div.letter-row-container').item(rowNum);
     const numWordsLeftContainer = rowContainer.querySelector('div.numWordsLeftContainer');
@@ -741,6 +889,11 @@ View.prototype = {
   },
 };
 
+/**
+ * Convert a date number to internal days-since-epoch format.
+ * @param {number} dateNumber - Date number (YYYYMMDD)
+ * @returns {number} Days since 2023-02-18
+ */
 function getInternalDateNumber(dateNumber) {
   return dateNumber - 20230218;
 }

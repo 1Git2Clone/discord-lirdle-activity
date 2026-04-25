@@ -5,6 +5,11 @@ import { WORDS } from './words.js';
 import * as perturb from './perturb.js';
 import { evalPossibleWords } from './solver.js';
 
+/**
+ * Calculate the current date as an integer (YYYYMMDD) relative to the
+ * Lirdle epoch (2023-02-18). The day resets at 04:00 UTC.
+ * @returns {number} Date number like 20230218, 20230219, etc.
+ */
 export function getDateNumber() {
   const d = new Date();
   const year = d.getUTCFullYear().toString();
@@ -22,11 +27,19 @@ export function getDateNumber() {
   return 20230218 + numDaysSince;
 }
 
+/** @returns {string} The target word for yesterday */
 export function getYesterdaysWord() {
   const num = getWordNumber(getDateNumber() - 1);
   return WORDS[num];
 }
 
+/**
+ * Get the word list index for a given date number.
+ * Uses a shuffled position array for deterministic word selection.
+ * In dev mode (localhost), returns a random word each time.
+ * @param {number} dateNumber - Date number from getDateNumber()
+ * @returns {number} Index into the WORDS array
+ */
 export function getWordNumber(dateNumber) {
   if (devMode()) {
     return Math.floor(Math.random() * WORDS.length);
@@ -41,10 +54,22 @@ export function getWordNumber(dateNumber) {
   }
 }
 
+/** @returns {boolean} True if running on localhost (enables random word selection) */
 export function devMode() {
   return location.hostname === 'localhost' || location.hostname === '127.0.0.1'; // && Math.random() < 0.00000001;
 }
 
+/**
+ * Pick a lie (score perturbation) for a line. Prefers the worst lie
+ * (one that leaves the most possible words) 90% of the time, falling
+ * back to a random perturbation 10% of the time.
+ * @param {string} guessWord - The guessed word
+ * @param {number[]} scores - Current perceived scores per position
+ * @param {Object} lettersByPosition - Position tracking data
+ * @param {Array} changes - Accumulator for applied changes
+ * @param {Object} solverData - Solver state for evaluating lies
+ * @returns {[number, number]} [position, direction] directive
+ */
 function pickALie(guessWord, scores, lettersByPosition, changes, solverData) {
   let directive1 = null;
   try {
@@ -67,6 +92,16 @@ function pickALie(guessWord, scores, lettersByPosition, changes, solverData) {
   return [directive1, directive2][winner];
 }
 // Modifies all arguments except guessWord
+/**
+ * Apply a lie to the perceived scores. Picks a perturbation directive
+ * via pickALie, applies it to the scores array, and records the change
+ * along with the directive in lettersByPosition for future reference.
+ * @param {string} guessWord - The guessed word
+ * @param {number[]} scores - Perceived scores (mutated in place)
+ * @param {Object} lettersByPosition - Position tracking (mutated in place)
+ * @param {Array} changes - Change log accumulator (mutated in place)
+ * @param {Object} solverData - Solver state
+ */
 export function lie(guessWord, scores, lettersByPosition, changes, solverData) {
   const [i, direction] = pickALie(guessWord, scores, lettersByPosition, changes, solverData);
   const oldVal = scores[i] + 3;
@@ -79,6 +114,16 @@ export function lie(guessWord, scores, lettersByPosition, changes, solverData) {
   lettersByPosition.assignments[guessWord].push([i, direction]);
 }
 
+/**
+ * Find the lie (score perturbation) that leaves the most possible words
+ * remaining, making it hardest for the player to narrow down. Evaluates
+ * all 10 possible directives (5 positions × 2 directions) and picks the
+ * one that produces the largest remaining word set.
+ * @param {string} guessWord - The guessed word
+ * @param {number[]} scores - Current perceived scores
+ * @param {Object} solverData - Solver state with possibleWords list
+ * @returns {[number, number]|null} [position, direction] or null if no lie found
+ */
 export function findWorstLie(guessWord, scores, solverData) {
   const directives = [];
   for (let i = 0; i < 5; i++) {

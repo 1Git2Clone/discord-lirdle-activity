@@ -2,11 +2,19 @@ import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
 import { clog } from '@lirdle/logger';
 import { generateLirdleImage } from '../utils/imageGenerator.js';
 
+/** @returns {string} Today's date in YYYY-MM-DD format */
 const getTodayDate = () => {
 	const today = new Date();
 	return today.toISOString().split('T')[0];
 };
 
+/**
+ * Handle the /share command. Fetches the user's completed game session and
+ * generates a shareable image of their result grid, posted as an embed in
+ * the current channel.
+ * @param {import('discord.js').Client} client - Discord client instance
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction - The /share interaction
+ */
 export const run = async (client, interaction) => {
 	try {
 		await interaction.deferReply();

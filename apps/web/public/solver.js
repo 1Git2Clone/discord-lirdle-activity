@@ -1,5 +1,9 @@
 import { WORDS } from './words.js';
 
+/**
+ * Create initial solver state with the full word list as possible words.
+ * @returns {{ level: number, possibleWords: string[], remainingWords: string[][], possibleWordCounts: number[] }}
+ */
 export function getSolverData() {
   return {
     level: 0,
@@ -10,12 +14,13 @@ export function getSolverData() {
 }
 
 /**
- * updates number of possible words remaining after each guess
- * @param guesses: array of char[5]
- * @param scores: array of number[5]
- * @param solver - { level, possibleWords: initially null when currentLevel = 0 }
- * @param finished - ignore last guess if we're finished
- * @return void
+ * Update the solver after each guess by filtering possible words.
+ * Iterates through unprocessed guesses and narrows the possible word
+ * list to words that could produce the observed scores.
+ * @param {string[]} guesses - Array of guessed words
+ * @param {number[][]} scores - Array of score arrays per guess
+ * @param {{ level: number, possibleWords: string[], remainingWords: string[][], possibleWordCounts: number[] }} solver - Solver state to mutate
+ * @param {boolean} [finished=false] - If true, ignore the last guess
  */
 export function updateSolver(guesses, scores, solver, finished = false) {
   const lim = guesses.length - (finished ? 2 : 1);
@@ -35,6 +40,14 @@ export function updateSolver(guesses, scores, solver, finished = false) {
   }
 }
 
+/**
+ * Filter a word list to only words that make sense given a guess and its scores.
+ * Removes the guessed word itself from the result set.
+ * @param {string} guess - The guessed word
+ * @param {number[]} scores - The scores for this guess (0/1/2 per position)
+ * @param {string[]} currentWordList - Current possible word list
+ * @returns {string[]} Filtered possible words
+ */
 export function evalPossibleWords(guess, scores, currentWordList) {
   const possibleWords = {};
   const lim = currentWordList.length;
@@ -53,6 +66,14 @@ export function evalPossibleWords(guess, scores, currentWordList) {
   return Object.keys(possibleWords);
 }
 
+/**
+ * Compute the true score of a guess against the target word.
+ * Returns an array of scores: 0 (letter absent), 1 (wrong position), 2 (correct position).
+ * First pass marks exact matches, second pass marks misplaced letters.
+ * @param {string} targetWord - The target word
+ * @param {string} guess - The guessed word
+ * @returns {number[]} Array of 5 scores (0, 1, or 2)
+ */
 export function evaluateGuess(targetWord, guess) {
   const target = Array.from(targetWord);
   const myGuess = Array.from(guess);
@@ -78,6 +99,15 @@ export function evaluateGuess(targetWord, guess) {
   return scores;
 }
 
+/**
+ * Check whether a candidate word could produce the observed scores
+ * when evaluated against the given guess. Used to narrow down the
+ * set of possible words after each guess.
+ * @param {string} guess - The guessed word
+ * @param {string} candidateWord - A candidate word to test
+ * @param {number[]} scores - The observed scores
+ * @returns {boolean} True if the candidate is compatible with the scores
+ */
 export function scoreMakesSense(guess, candidateWord, scores) {
   const thisScores = evaluateGuess(candidateWord, guess);
   if (thisScores.length !== scores.length) {

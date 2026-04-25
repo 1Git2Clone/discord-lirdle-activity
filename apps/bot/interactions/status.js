@@ -2,11 +2,19 @@ import { EmbedBuilder, AttachmentBuilder, MessageFlags } from 'discord.js';
 import { clog } from '@lirdle/logger';
 import { generateLirdleImage } from '../utils/imageGenerator.js';
 
+/** @returns {string} Today's date in YYYY-MM-DD format */
 const getTodayDate = () => {
 	const today = new Date();
 	return today.toISOString().split('T')[0];
 };
 
+/**
+ * Handle the /status command. Fetches the user's game progress for today and
+ * replies with an ephemeral embed showing their current status, guess count,
+ * and overall stats.
+ * @param {import('discord.js').Client} client - Discord client instance
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction - The /status interaction
+ */
 export const run = async (client, interaction) => {
 	try {
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });

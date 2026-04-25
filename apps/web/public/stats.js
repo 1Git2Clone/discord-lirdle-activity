@@ -1,8 +1,19 @@
 // Copyright (C) 2023 Bovination Productions, MIT License
 
+/**
+ * @constructor
+ * Stats tracking for player game history. Tracks finished and unfinished
+ * games, total guesses, best/worst scores, and five-green fake-out events.
+ */
 export default function Stats() {}
 
 Stats.prototype = {
+  /**
+   * Initialize or reinitialize stats from saved data.
+   * Runs migration on old stat formats. Resets everything to zero
+   * if the loaded stats indicate no games have been played.
+   * @param {Object|null} currentStats - Previously saved stats object
+   */
   initialize(currentStats) {
     let reinit = true;
     try {
@@ -23,6 +34,13 @@ Stats.prototype = {
       this.numFiveGreenFakeOuts = 0;
     }
   },
+  /**
+   * Migrate stats from older version formats to the current schema.
+   * Handles v2 (legacy with .data wrapper) and v3 (current) formats.
+   * Corrects known bugs where finished games exceeded total guesses.
+   * @param {Object} oldStats - Stats object in any version format
+   * @returns {Object} Migrated stats at the latest version
+   */
   migrate(oldStats) {
     if ('data' in oldStats || 'totalGames' in oldStats) {
       oldStats = {
@@ -55,6 +73,7 @@ Stats.prototype = {
     }
     return oldStats;
   },
+  /** @param {number} numGuesses - How many guesses the player took */
   addFinishedGame(numGuesses) {
     this.totalFinishedGuesses += numGuesses;
     this.totalFinishedGames += 1;
@@ -65,6 +84,7 @@ Stats.prototype = {
       this.highestScore = numGuesses;
     }
   },
+  /** @param {number} numGuesses - How many guesses before stopping */
   addUnfinishedGame(numGuesses) {
     this.totalUnfinishedGuesses += numGuesses;
     this.totalUnfinishedGames += 1;
@@ -72,6 +92,10 @@ Stats.prototype = {
   addFiveGreenFakeOut() {
     this.numFiveGreenFakeOuts += 1;
   },
+  /**
+   * Generate an HTML summary of all stats for display.
+   * @returns {string} HTML string with stats lines joined by <br> tags
+   */
   getStatsSummary() {
     const lines = ['<h3>Current Stats</h3>'];
     if (this.totalFinishedGames > 0) {
@@ -101,6 +125,11 @@ Stats.prototype = {
     lines.push('Stats are now from mid-July, 2023');
     return lines.join(' <br> \n');
   },
+  /**
+   * Round a number to 2 decimal places, unless it's already an integer.
+   * @param {number} n - Number to round
+   * @returns {number} Rounded value
+   */
   round2(n) {
     return Math.floor(n) === n ? n : Math.round(n * 100) / 100;
   },

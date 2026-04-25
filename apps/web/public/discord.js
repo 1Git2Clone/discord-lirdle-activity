@@ -3,6 +3,16 @@ import { DiscordSDK } from "./vendor/discord-sdk.js";
 let discordSdk;
 let discordUser = null;
 
+/**
+ * Authenticate with Discord SDK, with retry logic and cached token support.
+ * First tries a cached access token from localStorage. If that fails,
+ * initiates the OAuth authorization flow and exchanges the code for a
+ * token via the backend /api/token endpoint. Retries up to maxRetries
+ * times on failure.
+ * @param {string} clientId - Discord application client ID
+ * @param {number} [maxRetries=3] - Maximum authentication attempts
+ * @returns {Promise<Object>} Authentication result with user info
+ */
 async function authenticateWithRetry(clientId, maxRetries = 3) {
 	let cachedToken = null;
 	try {
@@ -57,6 +67,11 @@ async function authenticateWithRetry(clientId, maxRetries = 3) {
 	}
 }
 
+/**
+ * Initialize the Discord SDK, authenticate the user, and restore
+ * cloud-saved game state from the backend. Called on page load.
+ * Falls back to local state if cloud sync fails.
+ */
 async function setupDiscord() {
 	try {
 		const configRes = await fetch('/api/config');
@@ -115,6 +130,16 @@ async function setupDiscord() {
 	}
 }
 
+/**
+ * Save the current game session to the cloud backend.
+ * Stores guesses, stats, and outcome for cross-device sync.
+ * Called by the game model when the player completes a game
+ * or makes progress.
+ * @param {string} targetWord - The daily target word
+ * @param {Object} fullStateObject - Full game state (guesses, scores, etc.)
+ * @param {Object} statsObject - Player stats
+ * @param {boolean} won - Whether the player won
+ */
 window.saveLirdleSession = async function (targetWord, fullStateObject, statsObject, won) {
 	if (!discordUser) return;
 	const payload = {

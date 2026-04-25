@@ -4,8 +4,17 @@ import { generateGridDashboard } from '../utils/imageGenerator.js';
 
 const activeDashboards = new Map();
 
+/** @returns {string} Today's date in YYYY-MM-DD format */
 const getTodayDate = () => new Date().toISOString().split('T')[0];
 
+/**
+ * Handle the /lirdle command. Responds with a LAUNCH_ACTIVITY callback to open
+ * the Discord Activity, then sets up a live spectator dashboard that polls the
+ * database every 10 seconds for active players and renders their progress as a
+ * grid image. The dashboard auto-sleeps after 15 minutes of inactivity.
+ * @param {import('discord.js').Client} client - Discord client instance
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction - The /lirdle interaction
+ */
 export const run = async (client, interaction) => {
 	try {
 		await client.rest.post(`/interactions/${interaction.id}/${interaction.token}/callback`, {

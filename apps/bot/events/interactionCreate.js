@@ -3,6 +3,11 @@ import path from 'path';
 import { pathToFileURL } from 'url';
 import { clog } from '@lirdle/logger';
 
+/**
+ * Recursively find all .js interaction handler files in a directory.
+ * @param {string} dir - Directory path to search
+ * @returns {string[]} Array of file paths
+ */
 function getInteractionFiles(dir) {
   const entries = readdirSync(dir, { withFileTypes: true });
   const files = [];
@@ -22,6 +27,14 @@ function getInteractionFiles(dir) {
 
 const interactionFiles = getInteractionFiles('./interactions');
 
+/**
+ * Main interaction event handler. Routes slash commands, button clicks, and
+ * modal submissions to their corresponding handler files in the interactions/
+ * directory. Supports customId routing via colon-delimited (prefix:arg) or
+ * underscore-delimited (prefix_action) formats.
+ * @param {import('discord.js').Client} client - Discord client instance
+ * @param {import('discord.js').Interaction} interaction - The interaction to handle
+ */
 export default async (client, interaction) => {
   try {
     let fileMatch;

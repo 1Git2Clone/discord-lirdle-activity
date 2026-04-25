@@ -2,7 +2,10 @@ const logWithTime = process.env.LOG_WITH_TIME !== 'false';
 const logTimezone = process.env.LOG_TIMEZONE || 'UTC';
 
 /**
- * Format timestamp as YYYY-MM-DD HH:mm:ss.SSS
+ * Format current time as YYYY-MM-DD HH:mm:ss.SSS in the configured timezone.
+ * Uses Intl.DateTimeFormat with en-GB locale for zero-padded date parts.
+ * Timezone defaults to UTC if LOG_TIMEZONE env var is not set.
+ * @returns {string} Formatted timestamp string
  */
 function timestamp() {
   const now = new Date();
