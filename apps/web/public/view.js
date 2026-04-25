@@ -251,7 +251,7 @@ View.prototype = {
     }
   },
 
-  showMatchedWords(event, i, numLeftAmount) {
+  showMatchedWords(event, i) {
     const solverData = this.model.solverData;
     if (i >= solverData.remainingWords.length) {
       console.log(`Error: can't find row ${i} out of ${solverData.remainingWords.length}`);

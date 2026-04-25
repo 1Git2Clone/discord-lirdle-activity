@@ -10,7 +10,9 @@ Stats.prototype = {
         Object.assign(this, this.migrate(currentStats));
         reinit = this.totalFinishedGames === 0 && this.totalUnfinishedGames === 0;
       }
-    } catch {}
+    } catch {
+      // ignore
+    }
     if (reinit) {
       this.totalFinishedGuesses = 0;
       this.totalFinishedGames = 0;
