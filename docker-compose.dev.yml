@@ -1,0 +1,6 @@
+services:
+  tunnel:
+    # Override: use a quick tunnel (trycloudflare.com) instead of a remotely-managed tunnel
+    # This gives a public HTTPS URL without needing a Cloudflare domain.
+    # Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+    command: tunnel --url http://web:3000
