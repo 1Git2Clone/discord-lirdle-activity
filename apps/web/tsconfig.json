@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "lib": ["DOM", "ES2023"],
+    "outDir": "dist",
+    "rootDir": ".",
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts", "client/**/*.ts", "shared/**/*.ts"],
+  "references": [
+    { "path": "../../packages/logger/tsconfig.json" },
+    { "path": "../../packages/db/tsconfig.json" }
+  ]
+}

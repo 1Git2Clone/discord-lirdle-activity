@@ -4,3 +4,8 @@ node_modules
 *.db-journal
 dev.db
 docker-compose.override.yml
+*.tsbuildinfo
+apps/*/dist
+packages/*/dist
+apps/web/public/*.d.ts
+apps/web/public/*.js.map

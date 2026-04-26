@@ -9,8 +9,10 @@
     "dev:bot": "pnpm --filter @lirdle/bot run dev",
     "dev:web": "pnpm --filter @lirdle/web run dev",
     "dev": "pnpm --parallel --filter @lirdle/* run dev",
+    "build": "pnpm --filter @lirdle/logger run build && pnpm --filter @lirdle/db run build && pnpm --filter @lirdle/web run build && pnpm --filter @lirdle/bot run build",
+    "typecheck": "pnpm --filter @lirdle/logger exec tsc -p tsconfig.json --pretty false --noEmit && pnpm --filter @lirdle/db exec tsc -p tsconfig.json --pretty false --noEmit && pnpm --filter @lirdle/web exec tsc -p tsconfig.json --pretty false --noEmit && pnpm --filter @lirdle/web exec tsc -p tsconfig.client.json --pretty false --noEmit && pnpm --filter @lirdle/bot exec tsc -p tsconfig.json --pretty false --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "prettier --check . && eslint ."
+    "lint": "prettier --check . && eslint . && pnpm run typecheck"
   },
   "keywords": [],
   "author": "anato",
@@ -19,9 +21,16 @@
   "devDependencies": {
     "@eslint/compat": "^2.0.5",
     "@eslint/js": "^10.0.1",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.6.0",
+    "concurrently": "^9.2.1",
     "eslint": "^10.2.1",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.5.0",
-    "prettier": "^3.8.3"
+    "prettier": "^3.8.3",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.0"
   }
 }

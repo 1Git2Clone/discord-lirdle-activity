@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "declaration": false,
+    "lib": ["DOM", "ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmitOnError": false,
+    "outDir": "public",
+    "rootDir": "client",
+    "sourceMap": false,
+    "types": []
+  },
+  "include": ["client/**/*.ts", "client/**/*.d.ts", "shared/**/*.ts"]
+}

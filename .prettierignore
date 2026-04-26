@@ -1,5 +1,11 @@
 node_modules
 pnpm-lock.yaml
+.claude
+apps/web/public/*.js
+apps/web/public/*.d.ts
+apps/web/public/*.js.map
+apps/*/dist
+packages/*/dist
 apps/web/public/vendor
 *.min.js
 *.min.css

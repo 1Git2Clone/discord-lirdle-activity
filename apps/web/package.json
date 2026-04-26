@@ -3,9 +3,15 @@
   "version": "1.0.0",
   "type": "module",
   "description": "",
-  "main": "index.js",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "scripts": {
-    "dev": "node --watch index.js",
+    "build": "pnpm run build:server && pnpm run build:client",
+    "build:server": "tsc -p tsconfig.json",
+    "build:client": "tsc -p tsconfig.client.json",
+    "dev": "concurrently -k -n client,server \"pnpm run dev:client\" \"pnpm run dev:server\"",
+    "dev:server": "tsx watch src/index.ts",
+    "dev:client": "tsc -w -p tsconfig.client.json --preserveWatchOutput",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
