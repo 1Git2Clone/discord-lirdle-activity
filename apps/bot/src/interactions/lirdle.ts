@@ -74,20 +74,22 @@ export const run = async (client, interaction) => {
         const activePlayers = activeSessions.map((session) => {
           const member = guildMembers.get(session.userId);
           const state = JSON.parse(session.guesses || '{}');
+          const guessArray = Array.isArray(state.guessWords) ? state.guessWords : [];
           return {
             username: member ? member.user.username : 'Unknown',
             avatarUrl: member
               ? member.user.displayAvatarURL({ extension: 'png', size: 128 })
               : null,
-            guessWords: Array.isArray(state.guessWords) ? state.guessWords : [],
+            guessWords: guessArray,
             perceivedScores: Array.isArray(state.scores) ? state.scores : [],
             changes: Array.isArray(state.changes) ? state.changes : [],
             won: session.won,
             isFinished: session.won === true,
+            tries: guessArray.length,
           };
         });
 
-        const imageBuffer = await generateGridDashboard(activePlayers, 'LIVE LIRDLE SPECTATOR');
+        const imageBuffer = await generateGridDashboard(activePlayers, undefined, 'LIVE LIRDLE SPECTATOR');
         const attachment = new AttachmentBuilder(imageBuffer, { name: 'lirdle-live.png' });
 
         const liveEmbed = new EmbedBuilder()

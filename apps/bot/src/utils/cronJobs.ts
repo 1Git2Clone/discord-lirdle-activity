@@ -1,6 +1,5 @@
-// @ts-nocheck
 import cron from 'node-cron';
-import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
+import { EmbedBuilder, AttachmentBuilder, type Client } from 'discord.js';
 import { clog } from '@lirdle/logger';
 import { generateGridDashboard } from './imageGenerator.js';
 
@@ -8,9 +7,9 @@ import { generateGridDashboard } from './imageGenerator.js';
  * Schedule daily cron jobs. Runs a midnight leaderboard that fetches each
  * guild's completed sessions for the previous day and posts a summary image
  * to their active channel. Uses node-cron with UTC timezone.
- * @param {import('discord.js').Client} client - Discord client instance
+ * @param client - Discord client instance
  */
-export const startCronJobs = (client) => {
+export const startCronJobs = (client: Client) => {
   // '0 0 * * *' = Runs at minute 0, hour 0 (Midnight UTC) every single day
   cron.schedule(
     '0 0 * * *',
@@ -34,11 +33,10 @@ export const startCronJobs = (client) => {
             if (!channel) continue;
 
             const members = await guild.members.fetch();
-            const memberIds = Array.from(members.keys());
+            const memberIds = Array.from(members.keys()) as string[];
 
             const sessions = await db.session.findMany({
               where: { date: targetDate, userId: { in: memberIds } },
-              include: { dailyWord: true },
             });
 
             if (sessions.length === 0) continue;
@@ -65,10 +63,9 @@ export const startCronJobs = (client) => {
               return b.tries - a.tries;
             });
 
-            const targetWord = sessions[0].dailyWord?.word;
             const imageBuffer = await generateGridDashboard(
               players,
-              targetWord,
+              undefined,
               '🏆 Final Daily Leaderboard',
             );
             const attachment = new AttachmentBuilder(imageBuffer, {

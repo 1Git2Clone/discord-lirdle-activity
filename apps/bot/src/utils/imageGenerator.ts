@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createCanvas, loadImage } from 'canvas';
 
 const COLORS = {
@@ -17,14 +16,14 @@ const THIN_BORDER = 2;
 const RADIUS = 6;
 const GAP = 8;
 
-function getColorCode(scoreValue) {
+function getColorCode(scoreValue: number): string {
   if (scoreValue === 2) return COLORS.GREEN;
   if (scoreValue === 1) return COLORS.YELLOW;
   if (scoreValue === 0) return COLORS.GREY;
   return COLORS.EMPTY;
 }
 
-function createRoundRectPath(ctx, x, y, w, h, r) {
+function createRoundRectPath(ctx: any, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.lineTo(x + w - r, y);
@@ -40,17 +39,17 @@ function createRoundRectPath(ctx, x, y, w, h, r) {
 
 /**
  * Generates the Lirdle Grid Image
- * @param {Array} guessWords - Array of strings (the words guessed)
- * @param {Array} perceivedScores - Array of arrays (the scores the game SHOWED the user)
- * @param {Array} changes - The actual lies array from the database session!
- * @param {Boolean} isFinished - Has the user won/given up?
- * @param {Boolean} showLetters - Render the guessed letters inside the blocks
+ * @param guessWords - Array of strings (the words guessed)
+ * @param perceivedScores - Array of arrays (the scores the game SHOWED the user)
+ * @param changes - The actual lies array from the database session!
+ * @param isFinished - Has the user won/given up?
+ * @param showLetters - Render the guessed letters inside the blocks
  */
 export async function generateLirdleImage(
-  guessWords,
-  perceivedScores,
-  changes,
-  isFinished,
+  guessWords: string[],
+  perceivedScores: number[][],
+  changes: number[][],
+  isFinished: boolean,
   showLetters = false,
 ) {
   // Canvas dimensions: 5 columns, N rows (minimum 6)
@@ -134,18 +133,32 @@ export async function generateLirdleImage(
   return canvas.toBuffer('image/png');
 }
 
+interface Player {
+  username: string;
+  avatarUrl: string | null;
+  guessWords: string[];
+  perceivedScores: number[][];
+  won: boolean;
+  isFinished: boolean;
+  tries: number;
+  changes?: number[][];
+}
+
 /**
  * Generates a dynamic, auto-scaling grid of players.
  * Used for BOTH Live Spectator and the Midnight Leaderboard.
+ * @param players - Array of player objects with game state
+ * @param targetWord - The daily target word (unused in display, kept for compatibility)
+ * @param title - Title text to display at the top
  */
-export async function generateGridDashboard(players, title) {
+export async function generateGridDashboard(players: Player[], targetWord: string | undefined, title: string) {
   // Determine Grid Scaling based on Player Count
   const N = players.length;
   let cols = Math.min(N, 4);
   if (N === 0) cols = 1;
   const rows = Math.ceil(N / cols) || 1;
 
-  let scale;
+  let scale: number;
   if (N <= 2) scale = 1.2;
   else if (N <= 4) scale = 1.0;
   else if (N <= 8) scale = 0.85;
