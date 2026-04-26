@@ -1,3 +1,5 @@
+type LogFn = typeof console.log | typeof console.warn | typeof console.error;
+
 const logWithTime = process.env.LOG_WITH_TIME !== 'false';
 const logTimezone = process.env.LOG_TIMEZONE || 'UTC';
 
@@ -7,7 +9,7 @@ const logTimezone = process.env.LOG_TIMEZONE || 'UTC';
  * Timezone defaults to UTC if LOG_TIMEZONE env var is not set.
  * @returns {string} Formatted timestamp string
  */
-function timestamp() {
+function timestamp(): string {
   const now = new Date();
   const formatter = new Intl.DateTimeFormat('en-GB', {
     timeZone: logTimezone,
@@ -21,7 +23,7 @@ function timestamp() {
     hour12: false,
   });
 
-  const parts = formatter.formatToParts(now).reduce((acc, p) => {
+  const parts = formatter.formatToParts(now).reduce<Record<string, string>>((acc, p) => {
     acc[p.type] = p.value;
     return acc;
   }, {});
@@ -32,7 +34,7 @@ function timestamp() {
   );
 }
 
-const LEVELS = new Map([
+const LEVELS = new Map<LogFn, { label: string; color: string }>([
   [console.error, { label: '[ERROR]', color: '\x1b[31m' }], // red
   [console.warn, { label: '[WARN]', color: '\x1b[33m' }], // yellow
   [console.log, { label: '[INFO]', color: '\x1b[34m' }], // blue
@@ -45,7 +47,7 @@ const LEVELS = new Map([
  * @param {...any} args first arg is a string with tag already included (e.g. "[EVENT] Something"),
  *	               subsequent args can be error objects or other values
  */
-export function clog(fn, ...args) {
+export function clog(fn: LogFn, ...args: unknown[]): void {
   if (!args.length) return;
 
   const [first, ...rest] = args;
