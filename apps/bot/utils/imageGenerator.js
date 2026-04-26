@@ -137,7 +137,7 @@ export async function generateGridDashboard(players, title) {
 	if (N === 0) cols = 1;
 	const rows = Math.ceil(N / cols) || 1;
 
-	let scale = 1.0;
+	let scale;
 	if (N <= 2) scale = 1.2;
 	else if (N <= 4) scale = 1.0;
 	else if (N <= 8) scale = 0.85;
@@ -231,13 +231,15 @@ export async function generateGridDashboard(players, title) {
 
 		let displayGuesses = player.guessWords;
 		let displayScores = player.perceivedScores;
-		let displayChanges = player.changes || [];
+		let startIndex = 0;
 
 		if (showPill) {
-			displayGuesses = player.guessWords.slice(-5);
-			displayScores = player.perceivedScores.slice(-5);
-			displayChanges = (player.changes || []).slice(-5);
+			startIndex = totalGuesses - 5;
+			displayGuesses = player.guessWords.slice(startIndex);
+			displayScores = player.perceivedScores.slice(startIndex);
 		}
+		
+		const changesArray = player.changes || [];
 
 		// Render 6 rows
 		const gridX = colCenter - (GRID_WIDTH / 2);
@@ -260,9 +262,10 @@ export async function generateGridDashboard(players, title) {
 			}
 
 			const dataIndex = showPill ? row - 1 : row;
+			const originalIndex = startIndex + dataIndex;
 			const guess = displayGuesses[dataIndex];
 			const perceivedScoreRow = displayScores[dataIndex];
-			const changeLine = displayChanges[dataIndex];
+			const changeLine = changesArray[originalIndex];
 
 			for (let col = 0; col < 5; col++) {
 				const cellX = gridX + (col * (M_CELL + M_GAP));

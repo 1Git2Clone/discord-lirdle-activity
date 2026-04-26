@@ -34,23 +34,19 @@ export const run = async (client, interaction) => {
 			.setColor('#ef4444')
 			.setTitle('🔴 Lirdle Live Spectator')
 			.setDescription('Loading live data...')
-			.setFooter({ text: 'Updates every 10 seconds • Sleeps after 15m of inactivity' });
+			.setFooter({ text: 'Updates automatically • Shows all players today' });
 
 		const dashboardMessage = await interaction.channel.send({ embeds: [embed] });
 
 		let lastHash = '';
-		let idleTicks = 0;
-		const MAX_IDLE_TICKS = 90;
 
 		const pollInterval = setInterval(async () => {
 			try {
 				const today = getTodayDate();
-				const activeThreshold = new Date(Date.now() - 15 * 60 * 1000);
 
 				const activeSessions = await db.session.findMany({
 					where: {
 						date: today,
-						updatedAt: { gte: activeThreshold },
 						userId: { in: Array.from(guildMembers.keys()) }
 					},
 					include: { dailyWord: true }
@@ -59,20 +55,8 @@ export const run = async (client, interaction) => {
 				const currentHash = activeSessions.map(s => s.updatedAt.getTime()).join('-');
 
 				if (currentHash === lastHash) {
-					idleTicks++;
-					if (idleTicks >= MAX_IDLE_TICKS) {
-						clearInterval(pollInterval);
-						activeDashboards.delete(channelId);
-						const sleepEmbed = new EmbedBuilder()
-							.setColor('#6b7280')
-							.setTitle('💤 Live Spectator Ended')
-							.setDescription('Players have been inactive for 15 minutes. Type `/lirdle` to wake it up!');
-						await dashboardMessage.edit({ embeds: [sleepEmbed], files: [] }).catch(() => { });
-					}
 					return;
 				}
-
-				idleTicks = 0;
 				lastHash = currentHash;
 
 				const activePlayers = activeSessions.map(session => {
@@ -83,12 +67,13 @@ export const run = async (client, interaction) => {
 						avatarUrl: member ? member.user.displayAvatarURL({ extension: 'png', size: 128 }) : null,
 						guessWords: Array.isArray(state.guessWords) ? state.guessWords : [],
 						perceivedScores: Array.isArray(state.scores) ? state.scores : [],
+						changes: Array.isArray(state.changes) ? state.changes : [],
 						won: session.won,
 						isFinished: session.won === true
 					};
 				});
 
-				const imageBuffer = await generateGridDashboard(activePlayers, "🔴 LIVE LIRDLE SPECTATOR");
+				const imageBuffer = await generateGridDashboard(activePlayers, "LIVE LIRDLE SPECTATOR");
 				const attachment = new AttachmentBuilder(imageBuffer, { name: 'lirdle-live.png' });
 
 				const liveEmbed = new EmbedBuilder()
