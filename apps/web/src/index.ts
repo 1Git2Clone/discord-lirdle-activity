@@ -7,19 +7,21 @@ import { promises as fs } from 'fs';
 import crypto from 'crypto';
 import { clog } from '@lirdle/logger';
 import { getUniqueWordForUser, evaluateTrueScore } from './utils/prng.js';
-import { lie } from './public/numbers.js';
-
-dotenvFlow.config({ path: '../../' });
+import { lie } from '../client/numbers.js';
 
 const { db } = await import('@lirdle/db');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const repoRoot = path.resolve(__dirname, '..', '..', '..');
+const publicDir = path.resolve(__dirname, '..', 'public');
+
+dotenvFlow.config({ path: repoRoot });
 
 const app = express();
-const PORT = process.env.WEB_PORT || 3000;
-const CLIENT_ID = process.env.CLIENT_ID.trim();
-const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const PORT = Number(process.env.WEB_PORT || 3000);
+const CLIENT_ID = process.env.CLIENT_ID?.trim() ?? '';
+const CLIENT_SECRET = process.env.CLIENT_SECRET ?? '';
 
 const ENCRYPTION_KEY = crypto
   .createHash('sha256')
@@ -28,7 +30,7 @@ const ENCRYPTION_KEY = crypto
   .substr(0, 32);
 const IV_LENGTH = 16;
 
-function encryptState(data) {
+function encryptState(data: unknown): string {
   const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
   let encrypted = cipher.update(JSON.stringify(data));
@@ -36,7 +38,7 @@ function encryptState(data) {
   return iv.toString('hex') + ':' + encrypted.toString('hex');
 }
 
-function decryptState(text) {
+function decryptState(text: string): unknown[] {
   try {
     const textParts = text.split(':');
     const iv = Buffer.from(textParts.shift(), 'hex');
@@ -54,7 +56,7 @@ function decryptState(text) {
 app.use(cors());
 app.use(express.json());
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(publicDir));
 
 app.post('/api/guess', async (req, res) => {
   try {
@@ -72,11 +74,15 @@ app.post('/api/guess', async (req, res) => {
       });
     }
 
-    const targetWord = getUniqueWordForUser(user.seed, user.gamesPlayed);
+    const persistedUser = user as { seed?: string; gamesPlayed: number };
+    const targetWord = getUniqueWordForUser(
+      persistedUser.seed ?? crypto.randomUUID(),
+      persistedUser.gamesPlayed,
+    );
     const trueScores = evaluateTrueScore(targetWord, guessString);
     const guessedIt = guessString === targetWord;
 
-    let parsedChanges = [];
+    let parsedChanges: unknown[] = [];
     if (encryptedChanges) {
       parsedChanges = decryptState(encryptedChanges);
     } else if (typeof changes === 'string') {
@@ -84,8 +90,8 @@ app.post('/api/guess', async (req, res) => {
     } else if (Array.isArray(changes)) {
       parsedChanges = changes;
     }
-    let finalScores = [...trueScores];
-    let newChanges = [...parsedChanges];
+    const finalScores = [...trueScores];
+    const newChanges = [...parsedChanges];
 
     if (!guessedIt) {
       lie(guessString, finalScores, lettersByPosition, newChanges, solverData);
@@ -206,7 +212,8 @@ app.post('/api/save-session', async (req, res) => {
 
 app.get('/api/load-session', async (req, res) => {
   try {
-    const { userId, date } = req.query;
+    const userId = typeof req.query.userId === 'string' ? req.query.userId : '';
+    const date = typeof req.query.date === 'string' ? req.query.date : '';
 
     if (!userId || !date) {
       return res.status(400).json({ error: 'Missing userId or date' });
@@ -246,7 +253,7 @@ app.get('/tease/:fileName', async (req, res) => {
   if (!/^t\d{3}\.txt$/.test(fileName)) {
     return res.status(400).send('Invalid request');
   }
-  const filePath = path.join(__dirname, 'public', 'tease', fileName);
+  const filePath = path.join(publicDir, 'tease', fileName);
   try {
     await fs.access(filePath);
     return res.sendFile(filePath);
@@ -260,7 +267,7 @@ app.get('/stats/:fileName', async (req, res) => {
   if (!/^day\d{4}\.json$/.test(fileName)) {
     return res.status(400).json({ error: 'Invalid request' });
   }
-  const filePath = path.join(__dirname, 'public', 'stats', fileName);
+  const filePath = path.join(publicDir, 'stats', fileName);
   try {
     await fs.access(filePath);
     return res.sendFile(filePath);

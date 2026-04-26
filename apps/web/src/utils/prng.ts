@@ -1,7 +1,8 @@
-import { WORDS } from '../public/words.js';
+import { WORDS } from '../../client/words.js';
 
-function xmur3(str) {
-  for (var i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
+function xmur3(str: string) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) {
     h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
     h = (h << 13) | (h >>> 19);
   }
@@ -12,9 +13,9 @@ function xmur3(str) {
   };
 }
 
-function mulberry32(a) {
+function mulberry32(a: number) {
   return function () {
-    var t = (a += 0x6d2b79f5);
+    let t = (a += 0x6d2b79f5);
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
@@ -27,7 +28,7 @@ function mulberry32(a) {
  * @param {number} gamesPlayed - The number of games the user has completed
  * @returns {string} The target word
  */
-export function getUniqueWordForUser(userSeed, gamesPlayed) {
+export function getUniqueWordForUser(userSeed: string, gamesPlayed: number): string {
   const seedGen = xmur3(userSeed);
   const rand = mulberry32(seedGen());
   const indices = Array.from({ length: WORDS.length }, (_, i) => i);
@@ -41,7 +42,7 @@ export function getUniqueWordForUser(userSeed, gamesPlayed) {
   return WORDS[indices[safeIndex]];
 }
 
-export function evaluateTrueScore(targetWord, guess) {
+export function evaluateTrueScore(targetWord: string, guess: string): number[] {
   const target = Array.from(targetWord);
   const myGuess = Array.from(guess);
   const scores = [0, 0, 0, 0, 0];
@@ -54,7 +55,7 @@ export function evaluateTrueScore(targetWord, guess) {
   }
   for (let i = 0; i < 5; i++) {
     if (myGuess[i] === '#') continue;
-    let letterPosition = target.indexOf(myGuess[i]);
+    const letterPosition = target.indexOf(myGuess[i]);
     if (letterPosition !== -1) {
       scores[i] = 1;
       target[letterPosition] = '#';
