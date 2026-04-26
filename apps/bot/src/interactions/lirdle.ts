@@ -1,6 +1,6 @@
 import { InteractionResponseType, EmbedBuilder, AttachmentBuilder } from 'discord.js';
 import { clog } from '@lirdle/logger';
-import { generateGridDashboard } from '../utils/imageGenerator.js';
+import { generateGridDashboard, type Player } from '../utils/imageGenerator.js';
 
 const activeDashboards = new Map();
 
@@ -71,7 +71,7 @@ export const run = async (client, interaction) => {
         }
         lastHash = currentHash;
 
-        const activePlayers = activeSessions.map((session) => {
+        const activePlayers: Player[] = activeSessions.map((session) => {
           const member = guildMembers.get(session.userId);
           const state = JSON.parse(session.guesses || '{}');
           const guessArray = Array.isArray(state.guessWords) ? state.guessWords : [];

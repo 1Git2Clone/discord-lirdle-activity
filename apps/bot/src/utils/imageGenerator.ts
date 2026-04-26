@@ -133,7 +133,7 @@ export async function generateLirdleImage(
   return canvas.toBuffer('image/png');
 }
 
-interface Player {
+export interface Player {
   username: string;
   avatarUrl: string | null;
   guessWords: string[];
