@@ -99,4 +99,3 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 Copyright (C) 2023 Bovination Productions, MIT License.\
 Revamped for Lirdle Discord Activity 2026.
-

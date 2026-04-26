@@ -115,7 +115,7 @@ h1 {
 }
 
 .filled-box.show-lie {
-  font-family: "Comic Sans", "Comic Sans MS", "Apple Chancery", "Bradley Hand", "papyrus", serif;
+  font-family: 'Comic Sans', 'Comic Sans MS', 'Apple Chancery', 'Bradley Hand', 'papyrus', serif;
   color: var(--orange);
 }
 

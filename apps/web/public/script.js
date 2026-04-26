@@ -3,277 +3,280 @@
 
 import View from './view.js';
 import Model from './model.js';
-import { getDateNumber } from "./numbers.js";
+import { getDateNumber } from './numbers.js';
 
 let view = null;
 let model = view;
 
-document.addEventListener('focus', function (e) {
-    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+document.addEventListener(
+  'focus',
+  function (e) {
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     if (isTouchDevice && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
-        e.target.blur();
+      e.target.blur();
     }
-}, true);
+  },
+  true,
+);
 
 function initialize() {
-    afdCheck();
-    view = new View();
-    model = new Model(view);
-    view.setModel(model);
-    model.initialize();
-    view.setModelContinue();
-    let gameFinished = false;
-    model.doneFunc = () => {
-        gameFinished = true;
-        if (window.saveLirdleSession) {
-            window.saveLirdleSession(
-                model.targetString,
-                model.saveableState,
-                model.stats,
-                true
-            );
-        }
+  afdCheck();
+  view = new View();
+  model = new Model(view);
+  view.setModel(model);
+  model.initialize();
+  view.setModelContinue();
+  let gameFinished = false;
+  model.doneFunc = () => {
+    gameFinished = true;
+    if (window.saveLirdleSession) {
+      window.saveLirdleSession(model.targetString, model.saveableState, model.stats, true);
     }
-    if (!model.allDone) {
-        const keyboard = document.getElementById("keyboard-cont");
-        const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        document.addEventListener("keyup", (e) => {
-            if (isMobileDevice) {
-                return;
-            }
+  };
+  if (!model.allDone) {
+    const keyboard = document.getElementById('keyboard-cont');
+    const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    );
+    document.addEventListener('keyup', (e) => {
+      if (isMobileDevice) {
+        return;
+      }
 
-            if (gameFinished) {
-                e.stopPropagation();
-                e.preventDefault();
-                return;
-            }
+      if (gameFinished) {
+        e.stopPropagation();
+        e.preventDefault();
+        return;
+      }
 
-            if (e.isComposing || e.keyCode === 229) {
-                return;
-            }
+      if (e.isComposing || e.keyCode === 229) {
+        return;
+      }
 
-            if (view) {
-                view.keyHandler(e);
-            }
-            else console.log(`Not handling key ${e.key}`);
-        });
-        keyboard.addEventListener("click", (e) => {
-            if (gameFinished) {
-                e.stopPropagation();
-                e.preventDefault();
-                return;
-            }
-            if (!view) {
-                console.log(`Not handling click event on ${ e.target.nodeName }`);
-            } else if (e.target.nodeName === "BUTTON") {
-                const command = e.target.textContent;
-                // view.commandHandler(command);
-
-                if (command) {
-                    e.key = command;
-                    view.keyHandler(e);
-                } else {
-                    console.log(`Clicked button has no textContent`);
-                }
-            }
-            console.log(`Ignoring click on non-button ${ e.target.nodeName }`);
-        });
-        keyboard.addEventListener('dblclick', (e) => {
-            if (gameFinished) {
-                e.stopPropagation();
-                e.preventDefault();
-                return;
-            }
-            e.stopPropagation();
-            e.preventDefault();
-        });
-        const clearMarkersButton = document.getElementById("clear-markers");
-        if (clearMarkersButton) {
-            clearMarkersButton.addEventListener("click", (event) => {
-                model.clearMarkers(event);
-            });
-            clearMarkersButton.disabled = true;
-        }
-        model.clearMarkersButton = clearMarkersButton;
-    } else {
-        view.showStats();
-    }
-    // Always set up the stats buttons
-    const statsDiv = document.querySelector('div#statistics');
-    if (statsDiv) {
-        const closeButton = statsDiv.querySelector('div#closeRow button#closeStats');
-        closeButton.addEventListener('click', () => {
-            statsDiv.classList.add('hidden');
-        });
-        const shareButton = statsDiv.querySelector('div#closeRow button#shareStats');
-        shareButton.addEventListener('click', () => {
-            const statsBody = statsDiv.querySelector('div#statsBody');
-            if (statsBody) {
-                const shareText = statsBody.textContent;
-                try {
-                    copyTextToClipboard(shareText);
-                } catch (e) {
-                    console.log(`Trying to share failed: ${err}`);
-                }
-            }
-        });
-    }
-    const hintsButton = document.querySelector('div#hintsBlock input#toggle-hints');
-    if (hintsButton) {
-        hintsButton.addEventListener('click', (e) => {
-            const button = e.target;
-            const checked = button.checked;
-            button.labels[0].textContent = `Hints are ${ checked ? 'on' : 'off'}`;
-            model.updateHintStatus(checked);
-        });
-    }
-    const showNumLeftButton = document.querySelector('div#hintsBlock input#toggle-num-left');
-    if (showNumLeftButton) {
-        showNumLeftButton.addEventListener('click', (e) => {
-            const button = e.target;
-            const checked = button.checked;
-            button.labels[0].textContent = `Showing # possibilities is ${ checked ? 'on' : 'off'}`;
-            model.updateShowNumLeftStatus(checked);
-            view.showOrHideNumLeft(checked);
-        });
-    }
-
-    document.getElementById('shareResults').addEventListener('click', (e) => {
-        const shareText = model.getShareText();
-        try {
-            copyTextToClipboard(shareText);
-        } catch(e) {
-            console.log(`Trying to share failed: ${ err }`);
-        }
+      if (view) {
+        view.keyHandler(e);
+      } else console.log(`Not handling key ${e.key}`);
     });
-    // document.getElementById('theme-select').addEventListener('input', (e) => {
-    //     const themeName = view.changeThemeHandler(e);
-    //     if (themeName) {
-    //         model.changeTheme(themeName);
-    //     }
-    //     e.target.blur();
-    // });
+    keyboard.addEventListener('click', (e) => {
+      if (gameFinished) {
+        e.stopPropagation();
+        e.preventDefault();
+        return;
+      }
+      if (!view) {
+        console.log(`Not handling click event on ${e.target.nodeName}`);
+      } else if (e.target.nodeName === 'BUTTON') {
+        const command = e.target.textContent;
+        // view.commandHandler(command);
 
-    view.showTestimonial();
-    view.doBlurbs();
+        if (command) {
+          e.key = command;
+          view.keyHandler(e);
+        } else {
+          console.log(`Clicked button has no textContent`);
+        }
+      }
+      console.log(`Ignoring click on non-button ${e.target.nodeName}`);
+    });
+    keyboard.addEventListener('dblclick', (e) => {
+      if (gameFinished) {
+        e.stopPropagation();
+        e.preventDefault();
+        return;
+      }
+      e.stopPropagation();
+      e.preventDefault();
+    });
+    const clearMarkersButton = document.getElementById('clear-markers');
+    if (clearMarkersButton) {
+      clearMarkersButton.addEventListener('click', (event) => {
+        model.clearMarkers(event);
+      });
+      clearMarkersButton.disabled = true;
+    }
+    model.clearMarkersButton = clearMarkersButton;
+  } else {
+    view.showStats();
+  }
+  // Always set up the stats buttons
+  const statsDiv = document.querySelector('div#statistics');
+  if (statsDiv) {
+    const closeButton = statsDiv.querySelector('div#closeRow button#closeStats');
+    closeButton.addEventListener('click', () => {
+      statsDiv.classList.add('hidden');
+    });
+    const shareButton = statsDiv.querySelector('div#closeRow button#shareStats');
+    shareButton.addEventListener('click', () => {
+      const statsBody = statsDiv.querySelector('div#statsBody');
+      if (statsBody) {
+        const shareText = statsBody.textContent;
+        try {
+          copyTextToClipboard(shareText);
+        } catch (err) {
+          console.log(`Trying to share failed: ${err}`);
+        }
+      }
+    });
+  }
+  const hintsButton = document.querySelector('div#hintsBlock input#toggle-hints');
+  if (hintsButton) {
+    hintsButton.addEventListener('click', (e) => {
+      const button = e.target;
+      const checked = button.checked;
+      button.labels[0].textContent = `Hints are ${checked ? 'on' : 'off'}`;
+      model.updateHintStatus(checked);
+    });
+  }
+  const showNumLeftButton = document.querySelector('div#hintsBlock input#toggle-num-left');
+  if (showNumLeftButton) {
+    showNumLeftButton.addEventListener('click', (e) => {
+      const button = e.target;
+      const checked = button.checked;
+      button.labels[0].textContent = `Showing # possibilities is ${checked ? 'on' : 'off'}`;
+      model.updateShowNumLeftStatus(checked);
+      view.showOrHideNumLeft(checked);
+    });
+  }
+
+  document.getElementById('shareResults').addEventListener('click', () => {
+    const shareText = model.getShareText();
+    try {
+      copyTextToClipboard(shareText);
+    } catch (err) {
+      console.log(`Trying to share failed: ${err}`);
+    }
+  });
+  // document.getElementById('theme-select').addEventListener('input', (e) => {
+  //     const themeName = view.changeThemeHandler(e);
+  //     if (themeName) {
+  //         model.changeTheme(themeName);
+  //     }
+  //     e.target.blur();
+  // });
+
+  view.showTestimonial();
+  view.doBlurbs();
 }
-window.startLirdle = function() {
-    initialize();
+window.startLirdle = function () {
+  initialize();
 };
 
 function fallbackCopyTextToClipboard(text) {
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
 
-    // Avoid scrolling to bottom
-    textArea.style.top = "0";
-    textArea.style.left = "0";
-    textArea.style.position = "fixed";
+  // Avoid scrolling to bottom
+  textArea.style.top = '0';
+  textArea.style.left = '0';
+  textArea.style.position = 'fixed';
 
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
 
-    try {
-        const successful = document.execCommand('copy');
-        const msg = successful ? 'successful' : 'unsuccessful';
-        console.log('Fallback: Copying text command was ' + msg);
-    } catch (err) {
-        console.error('Fallback: Oops, unable to copy', err);
-    }
+  try {
+    const successful = document.execCommand('copy');
+    const msg = successful ? 'successful' : 'unsuccessful';
+    console.log('Fallback: Copying text command was ' + msg);
+  } catch (err) {
+    console.error('Fallback: Oops, unable to copy', err);
+  }
 
-    document.body.removeChild(textArea);
+  document.body.removeChild(textArea);
 }
 
 function copyTextToClipboard(text) {
-    if (!navigator.clipboard) {
-        fallbackCopyTextToClipboard(text);
-        return;
-    }
-    navigator.clipboard.writeText(text).then(function() {
-        console.log('navigator.clipboard.writeText worked');
-    }, function(err) {
-        console.error(`navigator.clipboard.writeText failed: ${ e }`);
-        fallbackCopyTextToClipboard(text);
-    });
+  if (!navigator.clipboard) {
+    fallbackCopyTextToClipboard(text);
+    return;
+  }
+  navigator.clipboard.writeText(text).then(
+    function () {
+      console.log('navigator.clipboard.writeText worked');
+    },
+    function (err) {
+      console.error(`navigator.clipboard.writeText failed: ${err}`);
+      fallbackCopyTextToClipboard(text);
+    },
+  );
 }
 
 function alreadyPlayedToday() {
-    const saveableState = localStorage.getItem('saveableState');
-    if (!saveableState) {
-        return false;
-    }
-    try {
-        const state = JSON.parse(saveableState);
-        return state.date === getDateNumber();
-    } catch(ex) {
-        console.log(`QQQ: problem: ${ ex }`);
-    }
+  const saveableState = localStorage.getItem('saveableState');
+  if (!saveableState) {
     return false;
+  }
+  try {
+    const state = JSON.parse(saveableState);
+    return state.date === getDateNumber();
+  } catch (ex) {
+    console.log(`QQQ: problem: ${ex}`);
+  }
+  return false;
 }
 
 function afdCheck() {
-    // console.log('in afdCheck ...');
-    const searchParams = new URLSearchParams(window.location.search);
-    // console.table(location);
-    // console.log(`QQQ: has std: ${ searchParams.has('noafj')}`);
-    if (searchParams.has('noafj')) {
-        return;
+  // console.log('in afdCheck ...');
+  const searchParams = new URLSearchParams(window.location.search);
+  // console.table(location);
+  // console.log(`QQQ: has std: ${ searchParams.has('noafj')}`);
+  if (searchParams.has('noafj')) {
+    return;
+  }
+  const nocom = searchParams.has('nocom');
+  if (searchParams.has('afj')) {
+    console.log('Testing the flip');
+  } else {
+    // Test the stuff...
+    const date = new Date();
+    // This next block is for testing...
+    // if (date.getMonth() !== 2 || date.getDate() !== 12) {
+    //     return;
+    // }
+    if (date.getMonth() !== 3 || date.getDate() !== 1) {
+      return;
     }
-    const nocom = searchParams.has('nocom');
-    if (searchParams.has('afj')) {
-        console.log("Testing the flip");
+    if (alreadyPlayedToday()) {
+      return;
+    }
+  }
+  let mainTheme = '';
+  try {
+    mainTheme = JSON.parse(localStorage.getItem('prefs'))['theme'];
+  } catch (ex) {
+    if (location.origin.includes('127.0.0.1')) {
+      console.log(`QQQ: error setting theme: ${ex}`);
+    }
+  }
+  let styleString = '';
+  let styleStringBase = '';
+  const href = window.location.href.toString();
+  if (mainTheme) {
+    const req = new URLSearchParams();
+    req.set('mainTheme', mainTheme);
+    if (href.includes('?')) {
+      styleString = '&';
     } else {
-        // Test the stuff...
-        const date = new Date();
-        // This next block is for testing...
-        // if (date.getMonth() !== 2 || date.getDate() !== 12) {
-        //     return;
-        // }
-        if (date.getMonth() !== 3 || date.getDate() !== 1) {
-            return;
-        }
-        if (alreadyPlayedToday()) {
-            return;
-        }
+      styleString = '?';
     }
-    let mainTheme = '';
-    try {
-        mainTheme = JSON.parse(localStorage.getItem('prefs'))['theme'];
-    } catch(ex) {
-        if (location.origin.includes('127.0.0.1')) {
-            console.log(`QQQ: error setting theme: ${ ex }`)
-        }
-    }
-    let styleString = '';
-    let styleStringBase = '';
-    const href = window.location.href.toString();
-    if (mainTheme) {
-        const req = new URLSearchParams();
-        req.set('mainTheme', mainTheme);
-        if (href.includes('?')) {
-            styleString = '&';
-        } else {
-            styleString = '?';
-        }
-        styleStringBase = req.toString()
-        styleString += styleStringBase;
-    }
-    if (location.origin.includes('127.0.0.1') || location.origin.includes('localhost')) {
-        window.location.replace(`http://bentframe.org/staging/lirdle41?${ styleStringBase }`);
-    }
-    let beforeSitename = 'lirdle';
-    let afterSitename = 'lirdle41';
-    if (!nocom) {
-        beforeSitename += '.com';
-        afterSitename += '.com';
-    }
-    let newURL = href.replace(beforeSitename, afterSitename);
-    if (href === newURL) {
-        return;
-    }
-    newURL += styleString;
-    // console.log(`QQQ: - Switch to ${ newURL }`);
-    window.location.replace(newURL);
-    // console.log(`QQQ: + Switch to ${ newURL }`);
+    styleStringBase = req.toString();
+    styleString += styleStringBase;
+  }
+  if (location.origin.includes('127.0.0.1') || location.origin.includes('localhost')) {
+    window.location.replace(`http://bentframe.org/staging/lirdle41?${styleStringBase}`);
+  }
+  let beforeSitename = 'lirdle';
+  let afterSitename = 'lirdle41';
+  if (!nocom) {
+    beforeSitename += '.com';
+    afterSitename += '.com';
+  }
+  let newURL = href.replace(beforeSitename, afterSitename);
+  if (href === newURL) {
+    return;
+  }
+  newURL += styleString;
+  // console.log(`QQQ: - Switch to ${ newURL }`);
+  window.location.replace(newURL);
+  // console.log(`QQQ: + Switch to ${ newURL }`);
 }
