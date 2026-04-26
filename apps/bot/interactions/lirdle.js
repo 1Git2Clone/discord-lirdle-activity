@@ -16,90 +16,93 @@ const getTodayDate = () => new Date().toISOString().split('T')[0];
  * @param {import('discord.js').ChatInputCommandInteraction} interaction - The /lirdle interaction
  */
 export const run = async (client, interaction) => {
-	try {
-		await client.rest.post(`/interactions/${interaction.id}/${interaction.token}/callback`, {
-			body: { type: InteractionResponseType.LaunchActivity }
-		});
-		clog(console.log, `[apps/bot/interactions/lirdle.js] User ${interaction.user.id} launched lirdle activity`);
+  try {
+    await client.rest.post(`/interactions/${interaction.id}/${interaction.token}/callback`, {
+      body: { type: InteractionResponseType.LaunchActivity },
+    });
+    clog(
+      console.log,
+      `[apps/bot/interactions/lirdle.js] User ${interaction.user.id} launched lirdle activity`,
+    );
 
-		if (!interaction.guild || !interaction.channel) return;
-		const channelId = interaction.channelId;
-		const guildId = interaction.guildId;
+    if (!interaction.guild || !interaction.channel) return;
+    const channelId = interaction.channelId;
+    const guildId = interaction.guildId;
 
-		if (activeDashboards.has(channelId)) {
-			clearInterval(activeDashboards.get(channelId));
-			activeDashboards.delete(channelId);
-		}
+    if (activeDashboards.has(channelId)) {
+      clearInterval(activeDashboards.get(channelId));
+      activeDashboards.delete(channelId);
+    }
 
-		const { db } = await import('@lirdle/db');
-		const guildMembers = await interaction.guild.members.fetch();
-		await db.guildConfig.upsert({
-			where: { guildId: guildId },
-			update: { activeChannelId: channelId },
-			create: { guildId: guildId, activeChannelId: channelId }
-		});
+    const { db } = await import('@lirdle/db');
+    const guildMembers = await interaction.guild.members.fetch();
+    await db.guildConfig.upsert({
+      where: { guildId: guildId },
+      update: { activeChannelId: channelId },
+      create: { guildId: guildId, activeChannelId: channelId },
+    });
 
-		const embed = new EmbedBuilder()
-			.setColor('#ef4444')
-			.setTitle('🔴 Lirdle Live Spectator')
-			.setDescription('Loading live data...')
-			.setFooter({ text: 'Updates automatically • Shows all players today' });
+    const embed = new EmbedBuilder()
+      .setColor('#ef4444')
+      .setTitle('🔴 Lirdle Live Spectator')
+      .setDescription('Loading live data...')
+      .setFooter({ text: 'Updates automatically • Shows all players today' });
 
-		const dashboardMessage = await interaction.channel.send({ embeds: [embed] });
+    const dashboardMessage = await interaction.channel.send({ embeds: [embed] });
 
-		let lastHash = '';
+    let lastHash = '';
 
-		const pollInterval = setInterval(async () => {
-			try {
-				const today = getTodayDate();
+    const pollInterval = setInterval(async () => {
+      try {
+        const today = getTodayDate();
 
-				const activeSessions = await db.session.findMany({
-					where: {
-						date: today,
-						userId: { in: Array.from(guildMembers.keys()) }
-					},
-					include: { dailyWord: true }
-				});
+        const activeSessions = await db.session.findMany({
+          where: {
+            date: today,
+            userId: { in: Array.from(guildMembers.keys()) },
+          },
+          include: { dailyWord: true },
+        });
 
-				const currentHash = activeSessions.map(s => s.updatedAt.getTime()).join('-');
+        const currentHash = activeSessions.map((s) => s.updatedAt.getTime()).join('-');
 
-				if (currentHash === lastHash) {
-					return;
-				}
-				lastHash = currentHash;
+        if (currentHash === lastHash) {
+          return;
+        }
+        lastHash = currentHash;
 
-				const activePlayers = activeSessions.map(session => {
-					const member = guildMembers.get(session.userId);
-					const state = JSON.parse(session.guesses || '{}');
-					return {
-						username: member ? member.user.username : 'Unknown',
-						avatarUrl: member ? member.user.displayAvatarURL({ extension: 'png', size: 128 }) : null,
-						guessWords: Array.isArray(state.guessWords) ? state.guessWords : [],
-						perceivedScores: Array.isArray(state.scores) ? state.scores : [],
-						changes: Array.isArray(state.changes) ? state.changes : [],
-						won: session.won,
-						isFinished: session.won === true
-					};
-				});
+        const activePlayers = activeSessions.map((session) => {
+          const member = guildMembers.get(session.userId);
+          const state = JSON.parse(session.guesses || '{}');
+          return {
+            username: member ? member.user.username : 'Unknown',
+            avatarUrl: member
+              ? member.user.displayAvatarURL({ extension: 'png', size: 128 })
+              : null,
+            guessWords: Array.isArray(state.guessWords) ? state.guessWords : [],
+            perceivedScores: Array.isArray(state.scores) ? state.scores : [],
+            changes: Array.isArray(state.changes) ? state.changes : [],
+            won: session.won,
+            isFinished: session.won === true,
+          };
+        });
 
-				const imageBuffer = await generateGridDashboard(activePlayers, "LIVE LIRDLE SPECTATOR");
-				const attachment = new AttachmentBuilder(imageBuffer, { name: 'lirdle-live.png' });
+        const imageBuffer = await generateGridDashboard(activePlayers, 'LIVE LIRDLE SPECTATOR');
+        const attachment = new AttachmentBuilder(imageBuffer, { name: 'lirdle-live.png' });
 
-				const liveEmbed = new EmbedBuilder()
-					.setColor('#ef4444')
-					.setImage('attachment://lirdle-live.png')
-					.setFooter({ text: '🔴 LIVE • Updates automatically' });
+        const liveEmbed = new EmbedBuilder()
+          .setColor('#ef4444')
+          .setImage('attachment://lirdle-live.png')
+          .setFooter({ text: '🔴 LIVE • Updates automatically' });
 
-				await dashboardMessage.edit({ embeds: [liveEmbed], files: [attachment] });
+        await dashboardMessage.edit({ embeds: [liveEmbed], files: [attachment] });
+      } catch (err) {
+        clog(console.error, '[apps/bot/interactions/lirdle.js][Poll Loop Error]', err);
+      }
+    }, 10000);
 
-			} catch (err) {
-				clog(console.error, '[apps/bot/interactions/lirdle.js][Poll Loop Error]', err);
-			}
-		}, 10000);
-
-		activeDashboards.set(channelId, pollInterval);
-
-	} catch (error) {
-		clog(console.error, '[apps/bot/interactions/lirdle.js] Error:', error);
-	}
+    activeDashboards.set(channelId, pollInterval);
+  } catch (error) {
+    clog(console.error, '[apps/bot/interactions/lirdle.js] Error:', error);
+  }
 };
