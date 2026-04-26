@@ -26,6 +26,7 @@ RUN pnpm approve-builds --all
 COPY . .
 
 RUN pnpm --filter @lirdle/db exec prisma generate
+RUN pnpm run build
 
 FROM node:22-bullseye-slim
 RUN apt-get update && apt-get install -y --fix-missing \
