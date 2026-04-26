@@ -5,13 +5,13 @@ import { clog } from '@lirdle/logger';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const repoRoot = path.resolve(__dirname, '..', '..');
+const repoRoot = path.resolve(__dirname, '..', '..', '..');
 
 dotenvFlow.config({ path: repoRoot });
 
 // BOT VARIABLES
-export const clientid = process.env.CLIENT_ID;
-export const token = process.env.TOKEN;
+export const clientid = process.env.CLIENT_ID ?? '';
+export const token = process.env.TOKEN ?? '';
 export const version = process.env.VERSION;
 
 // DATABASE & LOGGING

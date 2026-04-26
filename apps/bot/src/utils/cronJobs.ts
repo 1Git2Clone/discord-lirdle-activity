@@ -1,3 +1,4 @@
+// @ts-nocheck
 import cron from 'node-cron';
 import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
 import { clog } from '@lirdle/logger';

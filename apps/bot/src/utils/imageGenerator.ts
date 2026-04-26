@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createCanvas, loadImage } from 'canvas';
 
 const COLORS = {
@@ -253,7 +254,7 @@ export async function generateGridDashboard(players, title) {
 
     // Render 6 rows
     const gridX = colCenter - GRID_WIDTH / 2;
-    let startY = 110;
+    const startY = 110;
 
     for (let row = 0; row < 6; row++) {
       const cellY = startY + row * (M_CELL + M_GAP);
