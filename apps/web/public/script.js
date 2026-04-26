@@ -112,7 +112,7 @@ function initialize() {
         const shareText = statsBody.textContent;
         try {
           copyTextToClipboard(shareText);
-        } catch (e) {
+        } catch (err) {
           console.log(`Trying to share failed: ${err}`);
         }
       }
@@ -138,11 +138,11 @@ function initialize() {
     });
   }
 
-  document.getElementById('shareResults').addEventListener('click', (e) => {
+  document.getElementById('shareResults').addEventListener('click', () => {
     const shareText = model.getShareText();
     try {
       copyTextToClipboard(shareText);
-    } catch (e) {
+    } catch (err) {
       console.log(`Trying to share failed: ${err}`);
     }
   });
@@ -195,7 +195,7 @@ function copyTextToClipboard(text) {
       console.log('navigator.clipboard.writeText worked');
     },
     function (err) {
-      console.error(`navigator.clipboard.writeText failed: ${e}`);
+      console.error(`navigator.clipboard.writeText failed: ${err}`);
       fallbackCopyTextToClipboard(text);
     },
   );

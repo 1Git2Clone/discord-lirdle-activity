@@ -93,7 +93,9 @@ Model.prototype = {
     if (!loadedStats) {
       try {
         loadedStats = JSON.parse(localStorage.getItem('stats'));
-      } catch (e) {}
+      } catch {
+        // Ignore parse errors
+      }
     }
     try {
       this.stats.initialize(loadedStats);
@@ -111,7 +113,9 @@ Model.prototype = {
         savedState =
           JSON.parse(localStorage.getItem('saveableState')) ||
           JSON.parse(localStorage.getItem('gameState'));
-      } catch (e) {}
+      } catch {
+        // Ignore parse errors
+      }
     }
     if (!savedState) {
       throw new Error('No saved state found. Initializing fresh board.');
@@ -589,10 +593,10 @@ function doFetch(endpoint, options) {
     options.date = getInternalDateNumber(options.date);
   }
   fetch(`/usage/${endpoint}?${new URLSearchParams(options)}`)
-    .then((response) => {
+    .then(() => {
       // ignore the response
     })
-    .catch((err) => {
+    .catch(() => {
       // yeah, ignore this too
     });
 }

@@ -17,7 +17,7 @@ async function authenticateWithRetry(clientId, maxRetries = 3) {
   let cachedToken = null;
   try {
     cachedToken = localStorage.getItem('discord_access_token');
-  } catch (e) {
+  } catch {
     // Browser blocked storage, proceed to normal auth
   }
 
@@ -25,11 +25,13 @@ async function authenticateWithRetry(clientId, maxRetries = 3) {
     try {
       const authResult = await discordSdk.commands.authenticate({ access_token: cachedToken });
       return authResult;
-    } catch (err) {
+    } catch {
       console.warn('Cached token was expired or invalid. Fetching a fresh code.');
       try {
         localStorage.removeItem('discord_access_token');
-      } catch (e) {}
+      } catch {
+        // Browser blocked storage, ignore
+      }
     }
   }
 
@@ -56,7 +58,7 @@ async function authenticateWithRetry(clientId, maxRetries = 3) {
 
       try {
         localStorage.setItem('discord_access_token', data.access_token);
-      } catch (e) {
+      } catch {
         // Browser blocked storage, ignore
       }
 
@@ -100,7 +102,7 @@ async function setupDiscord() {
         try {
           localStorage.removeItem('saveableState');
           console.log('DB is empty for today. Local board wiped.');
-        } catch (storageErr) {
+        } catch {
           // Ignore browser security blocks
         }
       } else {
@@ -119,7 +121,7 @@ async function setupDiscord() {
                 : JSON.stringify(syncData.session.stats);
             localStorage.setItem('stats', statsStr);
           }
-        } catch (storageErr) {
+        } catch {
           console.warn('Browser blocked localStorage, relying purely on Memory Bypass.');
         }
       }
