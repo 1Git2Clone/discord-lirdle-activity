@@ -7,12 +7,13 @@
  * @param {string} guessWord - The current guessed word
  * @param {number[]} scores - Current perceived scores (0/1/2 per position)
  * @param {{ green?: Object.<string, string[]>, assignments?: Object.<string, [number, number][]>, black?: Object.<string, number>, yellow?: Object.<string, number> }} lettersByPosition - Letter position tracking
+ * @param {function} randFunc - Optional random function for testing (returns 0 to 1)
  * @returns {[number, number]} [position, direction] where direction is -1 (decrease) or +1 (increase)
  */
 
-export function perturb(guessWord, scores, lettersByPosition) {
-  const i = Math.floor(Math.random() * scores.length);
-  const direction = Math.random() < 0.5 ? -1 : +1;
+export function perturb(guessWord, scores, lettersByPosition, randFunc = Math.random) {
+  const i = Math.floor(randFunc() * scores.length);
+  const direction = randFunc() < 0.5 ? -1 : +1;
   if (scoreContradiction(guessWord, scores, lettersByPosition, [i, direction]) === 0) {
     return [i, direction];
   }
@@ -40,7 +41,7 @@ export function perturb(guessWord, scores, lettersByPosition) {
       indices.push(i);
     }
   }
-  const index = indices[Math.floor(Math.random() * indices.length)];
+  const index = indices[Math.floor(randFunc() * indices.length)];
   return directives[index];
 }
 

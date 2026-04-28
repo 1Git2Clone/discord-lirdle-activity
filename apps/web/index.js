@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 import { promises as fs } from 'fs';
 import crypto from 'crypto';
 import { clog } from '@lirdle/logger';
-import { getUniqueWordForUser, evaluateTrueScore } from './utils/prng.js';
+import { getUniqueWordForUser, evaluateTrueScore, xmur3, mulberry32 } from './utils/prng.js';
 import { lie } from './public/numbers.js';
 
 dotenvFlow.config({ path: '../../' });
@@ -88,7 +88,9 @@ app.post('/api/guess', async (req, res) => {
     let newChanges = [...parsedChanges];
 
     if (!guessedIt) {
-      lie(guessString, finalScores, lettersByPosition, newChanges, solverData);
+      const lieSeedString = `${user.seed}-${user.gamesPlayed}-turn${parsedChanges.length}`;
+      const deterministicRand = mulberry32(xmur3(lieSeedString)());
+      lie(guessString, finalScores, lettersByPosition, newChanges, solverData, deterministicRand);
     }
 
     let outgoingChanges;

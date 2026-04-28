@@ -1,6 +1,6 @@
 import { WORDS } from '../public/words.js';
 
-function xmur3(str) {
+export function xmur3(str) {
   for (var i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
     h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
     h = (h << 13) | (h >>> 19);
@@ -12,7 +12,7 @@ function xmur3(str) {
   };
 }
 
-function mulberry32(a) {
+export function mulberry32(a) {
   return function () {
     var t = (a += 0x6d2b79f5);
     t = Math.imul(t ^ (t >>> 15), t | 1);

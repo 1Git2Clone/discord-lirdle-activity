@@ -68,17 +68,18 @@ export function devMode() {
  * @param {Object} lettersByPosition - Position tracking data
  * @param {Array} changes - Accumulator for applied changes
  * @param {Object} solverData - Solver state for evaluating lies
+ * @param {function} randFunc - Optional random function for testing (returns 0 to 1)
  * @returns {[number, number]} [position, direction] directive
  */
-function pickALie(guessWord, scores, lettersByPosition, changes, solverData) {
+function pickALie(guessWord, scores, lettersByPosition, changes, solverData, randFunc = Math.random) {
   let directive1 = null;
   try {
     directive1 =
-      solverData.possibleWords.length > 1 ? findWorstLie(guessWord, scores, solverData) : null;
+      solverData.possibleWords.length > 1 ? findWorstLie(guessWord, scores, solverData, randFunc) : null;
   } catch (ex) {
     console.log(`Error in findWorstLie: ${ex}`, ex);
   }
-  const directive2 = perturb.perturb(guessWord, scores, lettersByPosition);
+  const directive2 = perturb.perturb(guessWord, scores, lettersByPosition, randFunc);
   if (!directive1) {
     return directive2;
   }
@@ -88,7 +89,7 @@ function pickALie(guessWord, scores, lettersByPosition, changes, solverData) {
   for (let i = 1; i < indices.length; i++) {
     indices[i] = 1;
   }
-  const winner = indices[Math.floor(Math.random() * indices.length)];
+  const winner = indices[Math.floor(randFunc() * indices.length)];
   return [directive1, directive2][winner];
 }
 // Modifies all arguments except guessWord
@@ -101,9 +102,10 @@ function pickALie(guessWord, scores, lettersByPosition, changes, solverData) {
  * @param {Object} lettersByPosition - Position tracking (mutated in place)
  * @param {Array} changes - Change log accumulator (mutated in place)
  * @param {Object} solverData - Solver state
+ * @param {function} randFunc - Optional random function for testing (returns 0 to 1)
  */
-export function lie(guessWord, scores, lettersByPosition, changes, solverData) {
-  const [i, direction] = pickALie(guessWord, scores, lettersByPosition, changes, solverData);
+export function lie(guessWord, scores, lettersByPosition, changes, solverData, randFunc = Math.random) {
+  const [i, direction] = pickALie(guessWord, scores, lettersByPosition, changes, solverData, randFunc);
   const oldVal = scores[i] + 3;
   scores[i] = (oldVal + direction) % 3;
   changes.push([i, oldVal - 3, scores[i]]);
@@ -122,9 +124,10 @@ export function lie(guessWord, scores, lettersByPosition, changes, solverData) {
  * @param {string} guessWord - The guessed word
  * @param {number[]} scores - Current perceived scores
  * @param {Object} solverData - Solver state with possibleWords list
+ * @param {function} randFunc - Optional random function for testing (returns 0 to 1)
  * @returns {[number, number]|null} [position, direction] or null if no lie found
  */
-export function findWorstLie(guessWord, scores, solverData) {
+export function findWorstLie(guessWord, scores, solverData, randFunc = Math.random) {
   const directives = [];
   for (let i = 0; i < 5; i++) {
     directives.push([i, -1]);
@@ -154,7 +157,7 @@ export function findWorstLie(guessWord, scores, solverData) {
     case 1:
       return longestDirective[1];
     default:
-      return directives[longestIndices[Math.floor(Math.random() * longestIndices.length)]];
+      return directives[longestIndices[Math.floor(randFunc() * longestIndices.length)]];
   }
 }
 
