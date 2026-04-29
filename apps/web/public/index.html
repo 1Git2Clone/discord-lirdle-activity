@@ -14,24 +14,11 @@
     <link rel="stylesheet" href="./vendor/animate.min.css" />
   </head>
   <body>
-    <!-- Loading Screen -->
-    <!-- UPCOMING FEATURE -->
-    <!-- <div id="loading-screen" class="active">
-        <div class="spinner"></div>
-        <h2>Loading Lirdle...</h2>
-        <div class="progress-bar">
-            <div class="progress-fill"></div>
-        </div>
-    </div> -->
+    <div id="loading-screen" class="active">
+      <div class="spinner"></div>
+      <h2>Loading Lirdle...</h2>
+    </div>
 
-    <h1>Lirdle: One Lie Per Line</h1>
-    <h2 id="result" class="collapsible hidden">
-      <span id="result1"></span> |
-      <button class="button" type="button" id="shareResults">Copy to Clipboard</button>
-    </h2>
-    <h2 id="alldone" class="collapsible hidden"><span id="comeBackTime"></span></h2>
-
-    <!-- Minimized Window Overlay -->
     <div id="minimized-overlay">
       <div class="minimized-content">
         <h2>📱 Minimize Mode</h2>
@@ -39,16 +26,18 @@
       </div>
     </div>
 
-    <!-- Main App -->
-    <div id="game-board">
-      <!--
-        <div class="letter-row-container">
-            <div class="balancingLeftSideNumLeftHeading" />
-            <div class="letter-row">...</div>
-            <div class="numLeftHeading">...</div>
-        </div>
-        -->
-    </div>
+    <header>
+      <h1>Lirdle</h1>
+      <p class="subtitle">One lie per line</p>
+    </header>
+
+    <h2 id="result" class="collapsible hidden">
+      <span id="result1"></span>
+      <button type="button" id="myStatsToggle">📊 My Stats</button>
+    </h2>
+    <h2 id="alldone" class="collapsible hidden"><span id="comeBackTime"></span></h2>
+
+    <div id="game-board"></div>
 
     <div id="matchingWords" class="hidden">
       <h3>Other matched words</h3>
@@ -115,76 +104,53 @@
         <button class="keyboard-button" type="button">Enter</button>
       </div>
     </div>
-    <div id="whats-new">
-      <h3>What's New:</h3>
-      <ul>
-        <li>
-          Shades of 2004! We have a
-          <a target="_blank" rel="noopener noreferrer" href="https://lirdle.blogspot.com/">blog</a>!
-        </li>
-        <li>
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://www.youtube.com/@squirrelsmith/videos"
-            >Watch replays!</a
-          >
-        </li>
-        <li>
-          Secondary words are now flagged. These are valid but will never be the word of the day.
-        </li>
-        <li>The num-possible-word label becomes a button at the end of the game.</li>
-        <li>
-          Opt-in hints. Duplicates kick in every 8 guesses, non-words every 12. Track how close you
-          are. See below.
-        </li>
-        <li><a href="howtoplay.html" target="_blank">The Help Doc</a></li>
-        <li>Click on a filled letter to mark a lie, then truth, then neutral.</li>
-        <li id="tofw" class="tofw hidden">
-          <span id="tofw-heading">Testimonial of the Week: &ldquo;</span><span id="tofw-body"></span
-          ><span id="tofw-e-heading">&rdquo;</span>
-        </li>
-      </ul>
-      <div id="yesterdaysWord" class="summary hidden">
-        Yesterday's word was "<span id="theAnswer"></span>"<span id="answerStats"></span>.
-      </div>
-      <div id="todaysStats" class="summary hidden">
-        Today's stats so far: <span id="todaysPctFinishedSoFar"></span>% finished, avg tries:
-        <span id="todaysAvgSoFar"></span>.
-      </div>
-      <!-- <div id="themeSwitcher">
-            <label for="theme-select">Switch theme:</label>
-            <select name="themes" id="theme-select">
-                <option selected value="classic">Classic</option>
-                <option value="brainerd">Brainerd</option>
-                <option value="butter">Butter</option>
-                <option value="dark">Dark</option>
-                <option value="distractle">Distractle</option>
-                <option value="frikadeller">Frikadeller</option>
-                <option value="kincaid">Kincaid</option>
-                <option value="louisiana">Louisiana</option>
-                <option value="pink">Pink</option>
-                <option value="tommy">Tommy</option>
+
+    <div id="hintsBlock">
+      <fieldset>
+        <legend>Hints</legend>
+        <label for="toggle-hints">Hints are off</label>
+        <input name="toggle-hints" id="toggle-hints" type="checkbox" value="off" />
+        <p>Duplicate Words Available: <span id="numDuplicateWordsEarned">0</span></p>
+        <p>
+          Non-Words Available: <span id="numNonWordsEarned">0</span>
+          <em>(enter any five letters)</em>
+        </p>
+        <hr />
+        <label for="toggle-num-left">Showing # possibilities is off</label>
+        <input name="toggle-num-left" id="toggle-num-left" type="checkbox" checked="false" />
+        <hr />
+        <button type="button" name="clear-markers" id="clear-markers">
+          Clear the truth/lie markers
+        </button>
+      </fieldset>
+    </div>
+
+    <div id="myStatsPanel" class="hidden modal-overlay">
+      <div class="modal-backdrop" id="myStatsBackdrop"></div>
+      <div class="modal-content">
+        <div id="myStatsCloseRow">
+          <h3>📊 My Lirdle Stats</h3>
+          <button id="closeMyStats" type="button">Close</button>
+        </div>
+        <div id="myStatsBody">
+          <div class="my-stats-loading">Loading your stats...</div>
+        </div>
+        <div id="myStatsHistory">
+          <h4>Recent Games</h4>
+          <div id="myStatsSortBar">
+            <label for="myStatsSort">Sort by:</label>
+            <select id="myStatsSort">
+              <option value="date">Date</option>
+              <option value="tries">Tries</option>
+              <option value="won">Result</option>
             </select>
-        </div> -->
-      <div id="hintsBlock">
-        <fieldset>
-          <legend>Hints</legend>
-          <label for="toggle-hints">Hints are off</label>
-          <input name="toggle-hints" id="toggle-hints" type="checkbox" value="off" />
-          <p>Duplicate Words Available: <span id="numDuplicateWordsEarned">0</span></p>
-          <p>Non-Words Available: <span id="numNonWordsEarned">0</span> (enter any five letters)</p>
-          <hr />
-          <label for="toggle-num-left">Showing # possibilities is off</label>
-          <input name="toggle-num-left" id="toggle-num-left" type="checkbox" checked="false" />
-          <hr />
-          <button type="button" name="clear-markers" id="clear-markers">
-            Clear the truth/lie markers
-          </button>
-        </fieldset>
+            <button id="myStatsRefresh" type="button">🔄 Refresh</button>
+          </div>
+          <div id="myStatsList"></div>
+        </div>
       </div>
     </div>
-    <div id="statistics" class="hidden">
+    <div id="statistics" class="hidden" style="display: none">
       <div id="closeRow">
         <button class="button" type="button" id="shareStats">Copy to Clipboard</button>
         <button id="closeStats" type="button">Close</button>
@@ -192,10 +158,23 @@
       <br />
       <div id="statsBody"></div>
     </div>
-    <noscript>You need to enable JavaScript to run this app</noscript>
-    <footer></footer>
 
-    <!-- jQuery & Toastr -->
+    <!-- Hidden containers used by view.js — kept for DOM query compatibility, not displayed -->
+    <div id="yesterdaysWord" class="summary hidden" style="display: none">
+      Yesterday's word was "<span id="theAnswer"></span>"<span id="answerStats"></span>.
+    </div>
+    <div id="todaysStats" class="summary hidden" style="display: none">
+      Today's stats so far: <span id="todaysPctFinishedSoFar"></span>% finished, avg tries:
+      <span id="todaysAvgSoFar"></span>.
+    </div>
+    <div id="tofw" class="tofw hidden" style="display: none">
+      <span id="tofw-heading">Testimonial of the Week: &ldquo;</span>
+      <span id="tofw-body"></span>
+      <span id="tofw-e-heading">&rdquo;</span>
+    </div>
+
+    <noscript>You need to enable JavaScript to run this app</noscript>
+
     <script src="./vendor/jquery-3.6.0.min.js"></script>
     <script src="./vendor/toastr.min.js"></script>
     <script src="./script.js" type="module"></script>

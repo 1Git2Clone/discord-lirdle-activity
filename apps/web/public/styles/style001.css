@@ -3,34 +3,124 @@
 // Revamped for Discord Activity 2026
 */
 :root {
-  --green: green;
-  --red: red;
-  --yellow: yellow;
-  --gray: gray;
-  --orange: #ed9121;
-  --blue: #04d9ff;
-  --white: white;
-  --black: black;
+  --green: #32b827;
+  --red: #ef4444;
+  --yellow: #eab308;
+  --gray: #6b7280;
+  --orange: #f59e0b;
+  --purple: #b91cc1;
+  --blue: #5ee4ff;
+  --white: #f1f5f9;
+  --black: #0f1117;
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --border: #2d3143;
+  --text: #e2e4e9;
+  --muted: #8b8fa3;
 }
 
 body {
-  font-family: sans-serif;
-  background-color: var(--white);
-  color: var(--black);
+  font-family:
+    'Inter',
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 0 12px 24px;
+  min-height: 100vh;
 }
 
-#app {
+/* -- Loading Screen ------------------------------------------------- */
+#loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg);
+  z-index: 9999;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  justify-content: center;
+  align-items: center;
+  opacity: 1;
+  transition: opacity 0.4s ease;
+  pointer-events: all;
+}
+#loading-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.35s ease,
+    visibility 0s 0.35s;
+  visibility: hidden;
+}
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--orange);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+#loading-screen h2 {
+  margin: 14px 0 0;
+  font-size: 0.95rem;
+  color: var(--muted);
+  font-weight: 400;
 }
 
-h1 {
+/* -- Header ---------------------------------------------------------- */
+header {
   text-align: center;
-  padding-bottom: 0px;
-  margin-bottom: 0px;
+  padding: 20px 0 4px;
+}
+header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.04em;
+  color: var(--white);
+}
+header .subtitle {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 2px 0 0;
 }
 
+/* -- Result bar ------------------------------------------------------ */
+h2.collapsible.hidden {
+  visibility: collapse;
+  margin: 0;
+  padding: 0;
+}
+h2.collapsible.show {
+  text-align: center;
+  visibility: visible;
+  font-size: 0.95rem;
+  margin: 4px 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+h2.collapsible.show span {
+  border: solid 2px var(--orange);
+  border-radius: 6px;
+  padding: 4px 16px;
+  background: var(--surface);
+}
+
+/* -- Board ----------------------------------------------------------- */
 #game-board {
   display: flex;
   align-items: center;
@@ -38,10 +128,11 @@ h1 {
 }
 
 .letter-box {
-  border: 2px solid var(--gray);
-  border-radius: 3px;
-  margin: 2px;
-  font-size: 2.5rem;
+  box-sizing: border-box;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  margin: 6px;
+  font-size: 2.2rem;
   font-weight: 700;
   height: 3rem;
   width: 3rem;
@@ -49,300 +140,427 @@ h1 {
   justify-content: center;
   align-items: center;
   text-transform: uppercase;
-  -webkit-user-select: none;
   user-select: none;
-}
-
-#game-board.small1 .letter-row .letter-box {
-  font-size: 2rem;
-  font-weight: 600;
-  height: 2.5rem;
-  width: 2.5rem;
-}
-
-#game-board.small2 .letter-row .letter-box {
-  font-size: 1.5rem;
-  font-weight: 500;
-  height: 2rem;
-  width: 2rem;
-}
-
-#game-board.small3 .letter-row .letter-box {
-  font-size: 1rem;
-  font-weight: 400;
-  height: 1.5rem;
-  width: 1.5rem;
-}
-
-#game-board.small4 .letter-row .letter-box {
-  font-size: 0.7rem;
-  font-weight: 400;
-  height: 1rem;
-  width: 1rem;
+  color: var(--white);
+  background: var(--surface);
 }
 
 .letter-box.invalid {
   color: var(--red);
-  background-color: var(--white);
 }
 
 .letter-box.actualgrey {
-  border: 6px solid var(--black);
+  box-shadow: 0 0 0 4px var(--gray);
 }
-
 .letter-box.actualyellow {
-  border: 6px solid var(--yellow);
+  box-shadow: 0 0 0 4px var(--yellow);
 }
-
 .letter-box.actualgreen {
-  border: 6px solid var(--green);
+  box-shadow: 0 0 0 4px var(--green);
 }
 
 .filled-box {
-  border: 2px solid var(--black);
+  border: 2px solid var(--border);
+  color: var(--white);
 }
-
 .filled-box.background-yellow {
   background-color: var(--yellow);
+  color: #000;
 }
-
 .filled-box.background-green {
   background-color: var(--green);
+  color: #000;
 }
-
 .filled-box.background-grey {
   background-color: var(--gray);
+  color: #000;
 }
 
 .filled-box.show-lie {
-  font-family: 'Comic Sans', 'Comic Sans MS', 'Apple Chancery', 'Bradley Hand', 'papyrus', serif;
-  color: var(--orange);
+  font-family: 'Comic Sans', 'Comic Sans MS', 'Apple Chancery', 'Bradley Hand', cursive;
+  color: var(--purple);
 }
-
 .filled-box.show-perceived-truth {
   color: var(--blue);
+}
+
+/* Board size tiers */
+#game-board.small1 .letter-row .letter-box {
+  font-size: 1.7rem;
+  height: 3rem;
+  width: 3rem;
+}
+#game-board.small2 .letter-row .letter-box {
+  font-size: 1.3rem;
+  height: 1.9rem;
+  width: 1.9rem;
+}
+#game-board.small3 .letter-row .letter-box {
+  font-size: 1rem;
+  height: 1.5rem;
+  width: 1.5rem;
+}
+#game-board.small4 .letter-row .letter-box {
+  font-size: 0.75rem;
+  height: 1.1rem;
+  width: 1.1rem;
 }
 
 .letter-row-container {
   display: flex;
 }
-
 .letter-row {
   display: flex;
 }
 
-li.css-link.hidden {
-  display: none;
-}
-
+/* -- Keyboard -------------------------------------------------------- */
 #keyboard-cont {
   margin: 1rem 0;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-
 #keyboard-cont div {
   display: flex;
 }
-
 .second-row {
-  margin: 0.5rem 0;
+  margin: 0.4rem 0;
 }
 
 .keyboard-button {
-  font-size: 1rem;
-  font-weight: 700;
-  padding: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.7rem 0.55rem;
   margin: 0 2px;
   cursor: pointer;
   text-transform: uppercase;
-  color: var(--black);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  min-width: 2rem;
+}
+.keyboard-button:hover {
+  background: var(--border);
 }
 
-h2.collapsible.hidden {
-  visibility: collapse;
-  margin: 0;
-  padding: 0;
-}
-
-h2.collapsible.show {
-  text-align: center;
-  visibility: visible;
-}
-
-h2.collapsible.show span {
-  border: solid 4px var(--orange);
-  padding: 2px 20px 2px 20px;
-}
-
-nothing {
-  color: var(--green);
-  color: var(--orange);
-  color: var(--blue);
-}
-
+/* -- Word Problem Prompts ------------------------------------------- */
 .wordProblemPrompt.hidden {
   visibility: collapse;
   display: none;
 }
-
-.wordProblemPrompt.hidden span {
-  display: none;
-}
-
 .wordProblemPrompt.show {
   visibility: visible;
   display: inline;
+  font-size: 0.85rem;
+  color: var(--orange);
 }
 
-.wordProblemPrompt.show span {
-  display: inline;
+#dupWordContents {
+  font-weight: bold;
 }
 
-div.summary.hidden {
-  visibility: collapse;
-}
-
-div.summary.show {
-  visibility: visible;
-}
-
-footer {
-  padding: 0;
-}
-
-div#whats-new {
-  margin-bottom: 0px;
-}
-
-div#themeSwitcher {
-  margin-top: 4px;
-}
-
-li.tofw.hidden {
-  display: none;
-}
-
-lif.tofw.show {
-  display: block;
-}
-
-div#hintsBlock {
-  margin-top: 4px;
-  max-width: 20em;
-}
-
-div.balancingLeftSideNumLeftHeading {
-  display: inline;
-  vertical-align: bottom;
-  width: 4em;
-}
-
-div.balancingLeftSideNumLeftHeading.hidden {
-  visibility: hidden;
-}
-
-div.numWordsLeftContainer {
-  display: inline;
-  vertical-align: bottom;
-  width: 4em;
-}
-
-div.numWordsLeftContainer.hidden {
-  visibility: hidden;
-}
-
-span.numLeftHeading.hidden {
-  visibility: hidden;
-  vertical-align: bottom;
-  padding: 2px;
-}
-
-div#statistics {
-  /*position: fixed;*/
-  /*top: 30px;*/
-  /*left: 30px;*/
-  border: var(--orange) 2px dashed;
-  padding: 3px;
-}
-
-div#statistics.hidden {
-  visibility: collapse;
-  display: none;
-}
-
-div#statistics.show {
-  margin-top: 12px;
-  max-width: 20em;
-}
-
-div#statistics h3 {
-  text-align: left;
-  font-size: smaller;
-  padding-bottom: 0px;
-  margin-bottom: 0px;
-}
-
-div#statistics button#shareStats {
-  float: left;
-}
-
-div#statistics button#closeStats {
-  float: right;
-}
-
-div#promos {
-  margin-top: 0px;
-}
-
-div#promos .hidden {
-  visibility: collapse;
-  display: none;
-}
-
-div#promos div {
-  margin-top: 0px;
-}
-
-div#promos div a {
-  margin-top: 0px;
-}
-
+/* -- Matching Words -------------------------------------------------- */
 div#matchingWords.hidden {
   visibility: collapse;
   display: none;
 }
-
 div#matchingWords.show {
   visibility: visible;
   display: block;
-  border-right: 1px var(--black) solid;
-  border-bottom: 1px var(--black) solid;
-  border-left: 5px var(--black) solid;
-  border-top: 5px var(--black) solid;
+  border: 2px solid var(--orange);
+  border-radius: 8px;
   position: fixed;
-  top: 100px;
-  /*right: 200px;*/
-  /*align-items: center;*/
+  top: 80px;
   opacity: 1;
-  background-color: var(--white);
-  color: var(--black);
-  padding: 1px 3px 1px 3px;
-  margin: 10px 5px 5px 10px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 8px 10px;
+  margin: 10px;
+  z-index: 100;
 }
-
 div#matchingWords textarea {
   margin-bottom: 6px;
-  border: 1px #222 solid;
-  overflow-y: scroll;
-  background-color: var(--white);
-  color: var(--black);
-  font-family: sans-serif;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-family: monospace;
   text-transform: uppercase;
+  border-radius: 4px;
+  resize: none;
 }
 
-/* --- Minimized Overlay --- */
+/* -- Hints ----------------------------------------------------------- */
+#hintsBlock {
+  margin: 8px auto 0;
+  max-width: 20em;
+  font-size: 0.85rem;
+}
+#hintsBlock fieldset {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: var(--surface);
+}
+#hintsBlock legend {
+  color: var(--muted);
+  font-weight: 600;
+  padding: 0 6px;
+}
+#hintsBlock hr {
+  border-color: var(--border);
+}
+#hintsBlock p {
+  margin: 4px 0;
+}
+#hintsBlock label {
+  color: var(--muted);
+}
+
+#clear-markers,
+#myStatsToggle {
+  margin-top: 0px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 4px 16px;
+  border: 2px solid var(--orange);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--orange);
+  transition: background 0.15s;
+}
+#clear-markers:hover,
+#myStatsToggle:hover {
+  background: var(--orange);
+  color: var(--bg);
+}
+
+/* -- My Stats Panel (modal overlay) --------------------------------- */
+#myStatsPanel.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 2000;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.6);
+}
+#myStatsPanel.modal-overlay.hidden {
+  display: none;
+}
+#myStatsPanel.modal-overlay.show {
+  display: flex;
+}
+.modal-backdrop {
+  display: none;
+}
+.modal-content {
+  position: relative;
+  z-index: 1;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  max-width: 32em;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  margin: auto;
+}
+
+#myStatsCloseRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#myStatsCloseRow h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+#myStatsBody {
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+#myStatsBody .stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px 12px;
+  margin: 8px 0;
+}
+#myStatsBody .stat-label {
+  color: var(--muted);
+}
+#myStatsBody .stat-value {
+  font-weight: bold;
+  text-align: right;
+  color: var(--white);
+}
+.my-stats-loading {
+  color: var(--muted);
+  font-style: italic;
+}
+
+#myStatsHistory {
+  margin-top: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+#myStatsHistory h4 {
+  margin: 4px 0;
+  font-size: 0.85rem;
+}
+
+#myStatsSortBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 0.78rem;
+}
+#myStatsSortBar select {
+  font-size: 0.78rem;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+#myStatsRefresh {
+  font-size: 0.78rem;
+  cursor: pointer;
+  margin-left: auto;
+  background: transparent;
+  color: var(--orange);
+  border: 1px solid var(--orange);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+#myStatsRefresh:hover {
+  background: var(--orange);
+  color: var(--bg);
+}
+
+#myStatsList {
+  max-height: 220px;
+  overflow-y: auto;
+  font-size: 0.78rem;
+}
+#myStatsList .history-entry {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 4px;
+  border-bottom: 1px solid var(--border);
+}
+#myStatsList .history-entry:last-child {
+  border-bottom: none;
+}
+#myStatsList .history-entry .entry-date {
+  font-family: 'Fira Code', 'Cascadia Code', monospace;
+  color: var(--muted);
+}
+#myStatsList .history-entry .entry-result {
+  font-weight: bold;
+}
+#myStatsList .history-entry .entry-result.won {
+  color: var(--green);
+}
+#myStatsList .history-entry .entry-result.lost {
+  color: var(--red);
+}
+
+/* -- End-of-Game Statistics ------------------------------------------ */
+div#statistics {
+  border: 2px dashed var(--orange);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 12px auto 0;
+  max-width: 30em;
+  background: var(--surface);
+}
+div#statistics.hidden {
+  display: none;
+}
+div#statistics h3 {
+  text-align: left;
+  font-size: 0.82rem;
+  margin: 0 0 4px;
+  color: var(--white);
+}
+div#statistics button#shareStats {
+  float: left;
+  background: transparent;
+  color: var(--green);
+  border: 1px solid var(--green);
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+div#statistics button#closeStats {
+  float: right;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+/* -- Daily Info + Testimonial ---------------------------------------- */
+#daily-info {
+  max-width: 30em;
+  margin: 10px auto 0;
+  font-size: 0.82rem;
+}
+#yesterdaysWord,
+#todaysStats {
+  margin: 4px 0;
+  color: var(--muted);
+}
+#tofw {
+  margin: 4px 0;
+  color: var(--muted);
+  font-style: italic;
+}
+#theAnswer {
+  font-weight: bold;
+  color: var(--green);
+}
+
+div.summary.hidden {
+  display: none;
+}
+div.summary.show {
+  display: block;
+}
+li.tofw.hidden {
+  display: none;
+}
+li.tofw.show {
+  display: block;
+}
+
+/* -- Button utility -------------------------------------------------- */
+button.button {
+  background: transparent;
+  color: var(--orange);
+  border: 1px solid var(--orange);
+  border-radius: 5px;
+  padding: 3px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+button.button:hover {
+  background: var(--orange);
+  color: var(--bg);
+}
+
+/* -- Minimized Overlay ----------------------------------------------- */
 #minimized-overlay {
   display: none;
   position: fixed;
@@ -350,119 +568,152 @@ div#matchingWords textarea {
   left: 0;
   width: 100vw;
   height: 100vh;
-  box-sizing: border-box;
-  background: linear-gradient(135deg, #b5b5b5 0%, #eaeaea 100%);
-  color: #121212;
+  background: var(--bg);
+  color: var(--text);
   z-index: 10000;
-  border: 3px dashed var(--accent);
-}
-
-.minimized-content {
-  display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+}
+.minimized-content {
   text-align: center;
 }
-
 .minimized-content h2 {
-  font-size: 28px;
-  margin-bottom: 10px;
+  font-size: 1.5rem;
+  margin-bottom: 6px;
 }
-
 .minimized-content p {
-  font-size: 16px;
-  opacity: 0.7;
+  font-size: 0.9rem;
+  opacity: 0.6;
 }
 
 @media (max-height: 400px) {
-  #app {
+  body > *:not(#minimized-overlay) {
     display: none !important;
   }
-
   #minimized-overlay {
     display: flex !important;
-    justify-content: center;
-    align-items: center;
   }
-
   html,
   body {
     overflow: hidden;
   }
 }
 
-/* UPCOMING FEATURE */
-/* --- Loading Screen Enhancement --- */
-#loading-screen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%);
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  transition: opacity 0.5s ease;
+/* -- Scrollbar ------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 6px;
 }
-
-#loading-screen h2 {
-  margin: 20px 0 30px;
-  font-size: 18px;
-  color: var(--text-color);
+::-webkit-scrollbar-track {
+  background: var(--bg);
 }
-
-.progress-bar {
-  width: 200px;
-  height: 6px;
-  background: var(--border-color);
+::-webkit-scrollbar-thumb {
+  background: var(--border);
   border-radius: 3px;
-  overflow: hidden;
-  margin-top: 15px;
 }
 
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--green));
-  width: 0%;
-  animation: progress 2s ease-in-out forwards;
+/* -- Num-left helpers (unchanged selectors for JS) ------------------- */
+div.balancingLeftSideNumLeftHeading {
+  display: inline;
+  vertical-align: bottom;
+  width: 4em;
+}
+div.balancingLeftSideNumLeftHeading.hidden {
+  visibility: hidden;
+}
+div.numWordsLeftContainer {
+  display: inline;
+  vertical-align: bottom;
+  width: 4em;
+}
+div.numWordsLeftContainer.hidden {
+  visibility: hidden;
+}
+span.numLeftHeading.hidden {
+  visibility: hidden;
+  vertical-align: bottom;
+  padding: 2px;
 }
 
-@keyframes progress {
-  0% {
-    width: 0%;
+/* -- Landscape: hints left, board center, matchingWords right -------- */
+@media (min-width: 900px) and (min-height: 500px) {
+  body {
+    display: grid;
+    grid-template-columns: 1fr max-content 1fr;
+    grid-template-rows: auto auto auto 1fr auto auto;
+    gap: 4px;
+    padding: 0 16px 24px;
+    align-items: start;
   }
-
-  50% {
-    width: 70%;
+  header {
+    grid-column: 1 / -1;
+    grid-row: 1;
   }
-
-  100% {
-    width: 100%;
+  #result {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  #alldone {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+  #game-board {
+    grid-column: 2;
+    grid-row: 4;
+  }
+  #keyboard-cont {
+    grid-column: 2;
+    grid-row: 5;
+    margin-top: 4px;
+  }
+  #hintsBlock {
+    grid-column: 1;
+    grid-row: 4;
+    justify-self: end;
+    margin: 0 16px 0 0;
+  }
+  #matchingWords {
+    grid-column: 3;
+    grid-row: 4;
+    justify-self: start;
+    position: relative;
+    top: auto;
+  }
+  #myStatsPanel {
+    grid-column: 2;
+    grid-row: 6;
+  }
+  #statistics {
+    grid-column: 2;
+    grid-row: 6;
+  }
+  div#matchingWords.show {
+    position: relative;
+    top: auto;
+    left: auto;
+    margin: 0 0 0 16px;
   }
 }
 
-/* --- Loading Screen Enhancement --- */
-#loading-screen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: linear-gradient(135deg, #1a1a1a 0%, #121212 100%);
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  transition: opacity 0.5s ease;
+/* -- Vertical: center matchingWords horizontally --------------------- */
+@media (max-width: 899px), (max-height: 499px) {
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  div#matchingWords.show {
+    left: 50%;
+    transform: translateX(-50%);
+  }
 }
 
-#loading-screen h2 {
-  margin: 20px 0 30px;
-  font-size: 18px;
-  color: var(--text-color);
+/* -- Misc retained --------------------------------------------------- */
+nothing {
+  color: var(--green);
+  color: var(--orange);
+  color: var(--blue);
+}
+li.css-link.hidden {
+  display: none;
 }

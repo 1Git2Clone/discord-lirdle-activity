@@ -71,11 +71,20 @@ export function devMode() {
  * @param {function} randFunc - Optional random function for testing (returns 0 to 1)
  * @returns {[number, number]} [position, direction] directive
  */
-function pickALie(guessWord, scores, lettersByPosition, changes, solverData, randFunc = Math.random) {
+function pickALie(
+  guessWord,
+  scores,
+  lettersByPosition,
+  changes,
+  solverData,
+  randFunc = Math.random,
+) {
   let directive1 = null;
   try {
     directive1 =
-      solverData.possibleWords.length > 1 ? findWorstLie(guessWord, scores, solverData, randFunc) : null;
+      solverData.possibleWords.length > 1
+        ? findWorstLie(guessWord, scores, solverData, randFunc)
+        : null;
   } catch (ex) {
     console.log(`Error in findWorstLie: ${ex}`, ex);
   }
@@ -104,8 +113,22 @@ function pickALie(guessWord, scores, lettersByPosition, changes, solverData, ran
  * @param {Object} solverData - Solver state
  * @param {function} randFunc - Optional random function for testing (returns 0 to 1)
  */
-export function lie(guessWord, scores, lettersByPosition, changes, solverData, randFunc = Math.random) {
-  const [i, direction] = pickALie(guessWord, scores, lettersByPosition, changes, solverData, randFunc);
+export function lie(
+  guessWord,
+  scores,
+  lettersByPosition,
+  changes,
+  solverData,
+  randFunc = Math.random,
+) {
+  const [i, direction] = pickALie(
+    guessWord,
+    scores,
+    lettersByPosition,
+    changes,
+    solverData,
+    randFunc,
+  );
   const oldVal = scores[i] + 3;
   scores[i] = (oldVal + direction) % 3;
   changes.push([i, oldVal - 3, scores[i]]);

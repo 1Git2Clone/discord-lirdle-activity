@@ -169,13 +169,6 @@ export async function generateGridDashboard(players, title) {
   ctx.textAlign = 'center';
   ctx.fillText(title, width / 2, 50);
 
-  if (N === 0) {
-    ctx.font = 'italic 24px sans-serif';
-    ctx.fillStyle = COLORS.EMPTY;
-    ctx.fillText('Waiting for players...', width / 2, 110);
-    return canvas.toBuffer('image/png');
-  }
-
   // Mini Block Settings
   const M_CELL = 24;
   const M_BLOCK = 20;

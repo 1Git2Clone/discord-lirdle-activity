@@ -12,9 +12,6 @@ export default function View() {
   this.board = document.getElementById('game-board');
   this.dupWord = document.getElementById('dupWord');
   this.secondaryWordWarning = document.getElementById('secondaryWordWarning');
-  for (const elem of document.getElementsByClassName('keyboard-button')) {
-    elem.style.backgroundColor = NEUTRAL_COLOR;
-  }
   this.model = null;
   this.wordIsInvalid = false;
   this.wordIsNonTarget = false;
@@ -37,7 +34,6 @@ function pad(val, minSize, padChar) {
 }
 
 const COLORS = ['grey', 'yellow', 'green'];
-const NEUTRAL_COLOR = 'white';
 
 View.prototype = {
   /** @param {Object} model - Model instance */
@@ -233,11 +229,11 @@ View.prototype = {
       }
       const t1 = new Date();
       const times = [
-        23 - t1.getHours(),
-        pad(59 - t1.getMinutes(), 2, '0'),
-        pad(59 - t1.getSeconds(), 2, '0'),
+        23 - t1.getUTCHours(),
+        pad(59 - t1.getUTCMinutes(), 2, '0'),
+        pad(59 - t1.getUTCSeconds(), 2, '0'),
       ];
-      allDoneSpan.textContent = `Next puzzle in ${times.join(':')}`;
+      allDoneSpan.textContent = `Next puzzle in ${times.join(':')} (UTC)`;
       setTimeout(setTimeLeft, 1 * 1000);
     };
     setTimeout(setTimeLeft, 0);
@@ -274,24 +270,23 @@ View.prototype = {
     );
     for (let i = 0; i < numLeftContainers.length; i++) {
       const container = numLeftContainers.item(i);
-      const firstPart = container.firstChild;
-      const numLeftAmountSpan = firstPart.nextSibling;
-      const lastPart = numLeftAmountSpan.nextSibling;
+      const numLeftAmountSpan = container.querySelector('span.numLeftAmount');
+      if (!numLeftAmountSpan) continue;
       const numLeftAmount = parseInt(numLeftAmountSpan.textContent, 10);
-      if (numLeftAmount <= 1) {
+      if (isNaN(numLeftAmount) || numLeftAmount <= 1) {
         break;
       } else if (numLeftAmount > 20) {
         continue;
       }
+      const firstPart = container.querySelector('span.numLeftHeading');
       const numLeftButton = document.createElement('button');
       numLeftButton.textContent = numLeftAmountSpan.textContent;
       numLeftButton.addEventListener('click', (event) => {
         this.showMatchedWords(event, i, numLeftAmount);
       });
-      firstPart.parentElement.removeChild(numLeftAmountSpan);
-      firstPart.insertAdjacentElement('afterend', numLeftButton);
-      if (numLeftButton.nextSibling != lastPart) {
-        alert('Need to fix element placement');
+      numLeftAmountSpan.remove();
+      if (firstPart) {
+        firstPart.insertAdjacentElement('afterend', numLeftButton);
       }
     }
   },
@@ -499,9 +494,6 @@ View.prototype = {
     while (this.board.childElementCount) {
       this.board.removeChild(this.board.lastChild);
     }
-    for (const elem of document.getElementsByClassName('keyboard-button')) {
-      elem.style.backgroundColor = 'white';
-    }
   },
 
   /**
@@ -572,14 +564,14 @@ View.prototype = {
     for (const elem of document.getElementsByClassName('keyboard-button')) {
       if (elem.textContent === letter) {
         if (guessIt) {
-          elem.style.backgroundColor = color;
+          elem.style.backgroundColor = '';
         } else if (numHitsForEachScore[2]) {
           //TODO: Gradient these
           elem.style.backgroundColor = 'var(--green)';
         } else if (numHitsForEachScore[1]) {
           elem.style.backgroundColor = 'var(--yellow)';
         } else if (numHitsForEachScore[0]) {
-          elem.style.backgroundColor = '#bdd5ea';
+          elem.style.backgroundColor = 'var(--gray)';
         }
         break;
       }

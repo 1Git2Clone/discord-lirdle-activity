@@ -4,6 +4,10 @@
   "type": "module",
   "description": "",
   "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./leaderboard.js": "./leaderboard.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

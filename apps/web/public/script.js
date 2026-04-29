@@ -138,14 +138,17 @@ function initialize() {
     });
   }
 
-  document.getElementById('shareResults').addEventListener('click', () => {
-    const shareText = model.getShareText();
-    try {
-      copyTextToClipboard(shareText);
-    } catch (err) {
-      console.log(`Trying to share failed: ${err}`);
-    }
-  });
+  const shareResultsBtn = document.getElementById('shareResults');
+  if (shareResultsBtn) {
+    shareResultsBtn.addEventListener('click', () => {
+      const shareText = model.getShareText();
+      try {
+        copyTextToClipboard(shareText);
+      } catch (err) {
+        console.log(`Trying to share failed: ${err}`);
+      }
+    });
+  }
   // document.getElementById('theme-select').addEventListener('input', (e) => {
   //     const themeName = view.changeThemeHandler(e);
   //     if (themeName) {
@@ -156,6 +159,14 @@ function initialize() {
 
   view.showTestimonial();
   view.doBlurbs();
+
+  // Double rAF ensures browser has painted the board before fading out the loading screen
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const ls = document.getElementById('loading-screen');
+      if (ls) ls.classList.add('fade-out');
+    });
+  });
 }
 window.startLirdle = function () {
   initialize();

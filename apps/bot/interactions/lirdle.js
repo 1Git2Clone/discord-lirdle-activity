@@ -35,11 +35,21 @@ export const run = async (client, interaction) => {
     }
 
     const { db } = await import('@lirdle/db');
-    const guildMembers = await interaction.guild.members.fetch();
     await db.guildConfig.upsert({
       where: { guildId: guildId },
       update: { activeChannelId: channelId },
       create: { guildId: guildId, activeChannelId: channelId },
+    });
+
+    await db.user.upsert({
+      where: { id: interaction.user.id },
+      create: { id: interaction.user.id, gamesPlayed: 0 },
+      update: {},
+    });
+    await db.userGuild.upsert({
+      where: { userId_guildId: { userId: interaction.user.id, guildId } },
+      create: { userId: interaction.user.id, guildId },
+      update: {},
     });
 
     const embed = new EmbedBuilder()
@@ -56,12 +66,20 @@ export const run = async (client, interaction) => {
       try {
         const today = getTodayDate();
 
+        const userIds = (
+          await db.userGuild.findMany({
+            where: { guildId },
+            select: { userId: true },
+          })
+        ).map((r) => r.userId);
+
+        if (userIds.length === 0) return;
+
         const activeSessions = await db.session.findMany({
           where: {
             date: today,
-            userId: { in: Array.from(guildMembers.keys()) },
+            userId: { in: userIds },
           },
-          include: { dailyWord: true },
         });
 
         const currentHash = activeSessions.map((s) => s.updatedAt.getTime()).join('-');
@@ -71,8 +89,19 @@ export const run = async (client, interaction) => {
         }
         lastHash = currentHash;
 
+        const activeIds = activeSessions.map((s) => s.userId);
+        let memberLookup = new Map();
+        try {
+          const fetched = await interaction.guild.members.fetch({ user: activeIds });
+          for (const [id, member] of fetched) {
+            memberLookup.set(id, member);
+          }
+        } catch {
+          /* fallback: no member data */
+        }
+
         const activePlayers = activeSessions.map((session) => {
-          const member = guildMembers.get(session.userId);
+          const member = memberLookup.get(session.userId);
           const state = JSON.parse(session.guesses || '{}');
           return {
             username: member ? member.user.username : 'Unknown',

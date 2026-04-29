@@ -14,6 +14,17 @@ model User {
   wins          Int       @default(0)
   seed          String    @default(uuid())
   sessions      Session[]
+  guilds        UserGuild[]
+}
+
+model UserGuild {
+  userId  String
+  guildId String
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([userId, guildId])
+  @@index([guildId])
 }
 
 model DailyWord {
@@ -23,15 +34,19 @@ model DailyWord {
 }
 
 model GuildConfig {
-  guildId         String   @id
-  activeChannelId String
+  guildId              String   @id
+  activeChannelId      String
+  leaderboardChannelId String?
+  monthlyStatsEnabled  Boolean  @default(false)
 }
 
 model Session {
   id          String    @id @default(uuid())
   userId      String
+  guildId     String?
   date        String
   guesses     String
+  tries       Int       @default(0)
   won         Boolean   @default(false)
   completedAt DateTime  @default(now())
   updatedAt   DateTime  @default(now())      @updatedAt
@@ -40,4 +55,5 @@ model Session {
   dailyWord DailyWord @relation(fields: [date], references: [date])
 
   @@unique([userId, date])
+  @@index([guildId, date])
 }

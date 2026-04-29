@@ -51,6 +51,13 @@ Once the containers are running, push the Prisma schema to the SQLite volume:
 
 ```bash
 docker-compose exec web pnpm --filter @lirdle/db exec prisma db push
+docker-compose exec web pnpm --filter @lirdle/db exec prisma generate
+```
+
+Or, from the project, which exists as an option to force-reset the db:
+
+```bash
+pnpm run force-reset-db
 ```
 
 ---
@@ -76,14 +83,16 @@ If you are developing locally without Docker, follow these steps:
 3. **Start Development Servers:**
 
    ```bash
-   # Terminal 1: Run the Tunnel
-   cloudflared tunnel run --token <token>
+   # Terminal 1: Run the Tunnel (./apps/web)
+   npx cloudflared tunnel run --token <token>
 
-   # Terminal 2: Run the Web App (./apps/web)
-   pnpm run dev:web
+   # Or this, just to make sure to use the provided free URL to
+   # Discord Dev Portal -> Activity -> URL Mappings
+   # Every run of this command changes the URL, so take note.
+   npx cloudflared tunnel --url http://localhost:3000
 
-   # Terminal 3: Run the Web App (./apps/bot)
-   node .
+   # Terminal 2: Run the Web and Bot App (./apps/web)
+   pnpm run dev
    ```
 
 ### Docker

@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import { clog } from '@lirdle/logger';
 import { getUniqueWordForUser, evaluateTrueScore, xmur3, mulberry32 } from './utils/prng.js';
 import { lie } from './public/numbers.js';
+import { getLeaderboard, getUserStats } from '@lirdle/db/leaderboard.js';
 
 dotenvFlow.config({ path: '../../' });
 
@@ -137,7 +138,7 @@ app.post('/api/token', async (req, res) => {
 
 app.post('/api/save-session', async (req, res) => {
   try {
-    const { userId, date, guesses, won, stats } = req.body || {};
+    const { userId, date, guesses, won, guildId, channelId } = req.body || {};
     // TODO: Remove for debug
     // clog(console.log, `[apps/web/index.js] save-session payload:`, { userId, date, targetWord, hasGuesses: !!guesses, won, statsKeys: stats ? Object.keys(stats) : null });
 
@@ -146,6 +147,15 @@ app.post('/api/save-session', async (req, res) => {
         error: 'Missing required fields',
         body: req.body,
       });
+    }
+
+    // Compute tries count from the guesses state
+    let tries = 0;
+    try {
+      const parsed = typeof guesses === 'string' ? JSON.parse(guesses) : guesses;
+      if (Array.isArray(parsed?.guessWords)) tries = parsed.guessWords.length;
+    } catch {
+      /* ignore */
     }
 
     const guessesString = JSON.stringify(guesses);
@@ -164,19 +174,44 @@ app.post('/api/save-session', async (req, res) => {
     });
     const isFirstWin = won && (!existingSession || !existingSession.won);
 
+    const allUserSessions = await db.session.findMany({
+      where: { userId },
+      orderBy: { date: 'desc' },
+      select: { date: true, won: true },
+    });
+    allUserSessions.unshift({ date, won });
+
+    let currentStreak = 0;
+    let maxStreak = 0;
+    let run = 0;
+    for (const s of allUserSessions) {
+      if (s.won) {
+        run++;
+        if (run > maxStreak) maxStreak = run;
+      } else {
+        run = 0;
+      }
+    }
+    currentStreak = 0;
+    for (const s of allUserSessions) {
+      if (s.won) currentStreak++;
+      else break;
+    }
+
     await db.user.upsert({
       where: { id: userId },
       update: {
         gamesPlayed: isFirstWin ? { increment: 1 } : undefined,
         wins: isFirstWin ? { increment: 1 } : undefined,
-        maxStreak: stats?.highestScore || undefined,
+        currentStreak,
+        maxStreak,
       },
       create: {
         id: userId,
         gamesPlayed: won ? 1 : 0,
         wins: won ? 1 : 0,
-        currentStreak: won ? 1 : 0,
-        maxStreak: stats?.highestScore || 0,
+        currentStreak: currentStreak || (won ? 1 : 0),
+        maxStreak: maxStreak || (won ? 1 : 0),
         seed: crypto.randomUUID(),
       },
     });
@@ -188,15 +223,35 @@ app.post('/api/save-session', async (req, res) => {
       update: {
         guesses: guessesString,
         won: won,
+        tries,
+        guildId: guildId || null,
         completedAt: new Date(),
       },
       create: {
         userId,
         date,
+        tries,
+        guildId: guildId || null,
         guesses: guessesString,
         won: won,
       },
     });
+
+    if (guildId) {
+      await db.userGuild.upsert({
+        where: { userId_guildId: { userId, guildId } },
+        create: { userId, guildId },
+        update: {},
+      });
+    }
+
+    if (guildId && channelId) {
+      await db.guildConfig.upsert({
+        where: { guildId },
+        create: { guildId, activeChannelId: channelId },
+        update: {},
+      });
+    }
 
     clog(console.log, `[apps/web/index.js] Saved session for User ${userId} on ${date}`);
     res.json({ success: true, session });
@@ -241,6 +296,103 @@ app.get('/api/load-session', async (req, res) => {
 
 app.get('/api/config', (req, res) => {
   res.json({ clientId: CLIENT_ID });
+});
+
+/**
+ * GET /api/leaderboard?guildId=<id>&period=daily|monthly|all&date=YYYY-MM-DD
+ * Returns ranked leaderboard entries for a guild within a time period.
+ * Uses UserGuild table to scope players — no memberId list needed.
+ */
+app.get('/api/leaderboard', async (req, res) => {
+  try {
+    const { guildId, period = 'daily', date } = req.query;
+    if (!guildId) {
+      return res.status(400).json({ error: 'Missing guildId' });
+    }
+    if (!['daily', 'monthly', 'all'].includes(period)) {
+      return res.status(400).json({ error: 'Invalid period. Use daily, monthly, or all.' });
+    }
+    const entries = await getLeaderboard(guildId, period, date);
+    res.json({ success: true, period, entries });
+  } catch (error) {
+    clog(console.error, '[apps/web/index.js] Error fetching leaderboard:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/user/history?userId=<id>&sortBy=field>&order=asc|desc>&limit=n>
+ * Returns a user's game history with computed stats.
+ */
+app.get('/api/user/history', async (req, res) => {
+  try {
+    const { userId, sortBy, order, limit } = req.query;
+    if (!userId) {
+      return res.status(400).json({ error: 'Missing userId' });
+    }
+    const result = await getUserStats(userId, sortBy, order, limit ? Number(limit) : undefined);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    clog(console.error, '[apps/web/index.js] Error fetching user history:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/guild-config?guildId=<id>
+ * Returns guild configuration (channel settings, monthly stats toggle).
+ */
+app.get('/api/guild-config', async (req, res) => {
+  try {
+    const { guildId } = req.query;
+    if (!guildId) {
+      return res.status(400).json({ error: 'Missing guildId' });
+    }
+    let config = await db.guildConfig.findUnique({ where: { guildId } });
+    if (!config) {
+      config = {
+        guildId,
+        activeChannelId: null,
+        leaderboardChannelId: null,
+        monthlyStatsEnabled: false,
+      };
+    }
+    res.json({ success: true, config });
+  } catch (error) {
+    clog(console.error, '[apps/web/index.js] Error fetching guild config:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /api/guild-config
+ * Updates guild configuration. Body: { guildId, leaderboardChannelId?, monthlyStatsEnabled? }
+ */
+app.post('/api/guild-config', async (req, res) => {
+  try {
+    const { guildId, leaderboardChannelId, monthlyStatsEnabled } = req.body;
+    if (!guildId) {
+      return res.status(400).json({ error: 'Missing guildId' });
+    }
+    const data = {};
+    if (leaderboardChannelId !== undefined)
+      data.leaderboardChannelId = leaderboardChannelId || null;
+    if (monthlyStatsEnabled !== undefined) data.monthlyStatsEnabled = monthlyStatsEnabled;
+
+    const config = await db.guildConfig.upsert({
+      where: { guildId },
+      update: data,
+      create: {
+        guildId,
+        activeChannelId: '',
+        ...data,
+      },
+    });
+    res.json({ success: true, config });
+  } catch (error) {
+    clog(console.error, '[apps/web/index.js] Error updating guild config:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 app.get('/tease/:fileName', async (req, res) => {

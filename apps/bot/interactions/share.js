@@ -2,11 +2,7 @@ import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
 import { clog } from '@lirdle/logger';
 import { generateLirdleImage } from '../utils/imageGenerator.js';
 
-/** @returns {string} Today's date in YYYY-MM-DD format */
-const getTodayDate = () => {
-  const today = new Date();
-  return today.toISOString().split('T')[0];
-};
+const getTodayDate = () => new Date().toISOString().split('T')[0];
 
 /**
  * Handle the /share command. Fetches the user's completed game session and
@@ -20,6 +16,7 @@ export const run = async (client, interaction) => {
     await interaction.deferReply();
 
     const userId = interaction.user.id;
+    const guildId = interaction.guildId;
     const today = getTodayDate();
     const { db } = await import('@lirdle/db');
 
@@ -36,6 +33,14 @@ export const run = async (client, interaction) => {
         .setDescription('You must finish your game today before you can share your results!')
         .setFooter({ text: 'Use /lirdle to finish playing' });
       return await interaction.editReply({ embeds: [embed] });
+    }
+
+    if (guildId) {
+      await db.userGuild.upsert({
+        where: { userId_guildId: { userId, guildId } },
+        create: { userId, guildId },
+        update: {},
+      });
     }
 
     const state = JSON.parse(session.guesses || '{}');

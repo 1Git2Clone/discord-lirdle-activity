@@ -129,10 +129,9 @@ async function setupDiscord() {
   } catch (err) {
     console.error('Cloud sync failed. Proceeding with local state.', err);
   } finally {
-    const loadingScreen = document.getElementById('loading-screen');
-    if (loadingScreen) loadingScreen.classList.remove('active');
-
     if (window.startLirdle) window.startLirdle();
+
+    setupMyStatsPanel();
   }
 }
 
@@ -150,6 +149,8 @@ window.saveLirdleSession = async function (targetWord, fullStateObject, statsObj
   if (!discordUser) return;
   const payload = {
     userId: discordUser.id,
+    guildId: discordSdk.guildId || null,
+    channelId: discordSdk.channelId || null,
     date: new Date().toISOString().split('T')[0],
     targetWord: targetWord,
     guesses: fullStateObject,
@@ -166,5 +167,129 @@ window.saveLirdleSession = async function (targetWord, fullStateObject, statsObj
     console.error('Failed to save to cloud', err);
   }
 };
+
+async function fetchUserStats(userId, sortBy = 'date', order = 'desc') {
+  try {
+    const res = await fetch(
+      `/api/user/history?userId=${userId}&sortBy=${sortBy}&order=${order}&limit=50`,
+    );
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.error('Failed to fetch user stats:', err);
+    return null;
+  }
+}
+
+function renderStatsSummary(data) {
+  const body = document.getElementById('myStatsBody');
+  if (!body) return;
+
+  if (!data || !data.stats) {
+    body.innerHTML = '<div class="my-stats-loading">Could not load stats.</div>';
+    return;
+  }
+
+  const s = data.stats;
+  body.innerHTML = [
+    '<div class="stat-grid">',
+    '<span class="stat-label">Games Played</span>',
+    `<span class="stat-value">${s.gamesPlayed}</span>`,
+    '<span class="stat-label">Games Won</span>',
+    `<span class="stat-value">${s.wins} (${s.gamesPlayed > 0 ? Math.round((s.wins / s.gamesPlayed) * 100) : 0}%)</span>`,
+    '<span class="stat-label">Forgot to Finish</span>',
+    `<span class="stat-value">${s.gamesForgot}</span>`,
+    '<span class="stat-label">Avg Tries (won)</span>',
+    `<span class="stat-value">${s.avgTries ? s.avgTries.toFixed(2) : '-'}</span>`,
+    '<span class="stat-label">Fewest Tries</span>',
+    `<span class="stat-value">${s.fewestTries || '-'}</span>`,
+    '<span class="stat-label">Most Tries</span>',
+    `<span class="stat-value">${s.mostTries || '-'}</span>`,
+    '<span class="stat-label">Avg Tries (quit)</span>',
+    `<span class="stat-value">${s.avgTriesBeforeStop ? s.avgTriesBeforeStop.toFixed(2) : '-'}</span>`,
+    '<span class="stat-label">Current Streak</span>',
+    `<span class="stat-value">${s.currentStreak}</span>`,
+    '<span class="stat-label">Best Streak</span>',
+    `<span class="stat-value">${s.maxStreak}</span>`,
+    '</div>',
+  ].join('\n');
+}
+
+function renderStatsHistory(data) {
+  const list = document.getElementById('myStatsList');
+  if (!list) return;
+
+  if (!data || !data.sessions || data.sessions.length === 0) {
+    list.innerHTML = '<div class="my-stats-loading">No games found.</div>';
+    return;
+  }
+
+  list.innerHTML = data.sessions
+    .map((s) => {
+      const wonClass = s.won ? 'won' : 'lost';
+      const resultText = s.won
+        ? `&#x2705; Won in ${s.tries}`
+        : `&#x274C; Unfinished (${s.tries} tries)`;
+      return `<div class="history-entry">
+        <span class="entry-date">${s.date}</span>
+        <span class="entry-result ${wonClass}">${resultText}</span>
+      </div>`;
+    })
+    .join('');
+}
+
+async function refreshMyStats() {
+  if (!window.DISCORD_USER_ID) return;
+  const sortSelect = document.getElementById('myStatsSort');
+  const sortBy = sortSelect ? sortSelect.value : 'date';
+  const data = await fetchUserStats(window.DISCORD_USER_ID, sortBy);
+  renderStatsSummary(data);
+  renderStatsHistory(data);
+}
+
+function setupMyStatsPanel() {
+  const toggleBtn = document.getElementById('myStatsToggle');
+  const panel = document.getElementById('myStatsPanel');
+  const closeBtn = document.getElementById('closeMyStats');
+  const sortSelect = document.getElementById('myStatsSort');
+  const refreshBtn = document.getElementById('myStatsRefresh');
+
+  if (!toggleBtn || !panel) return;
+
+  toggleBtn.addEventListener('click', async () => {
+    const isHidden = panel.classList.contains('hidden');
+    if (isHidden) {
+      panel.classList.remove('hidden');
+      panel.classList.add('show');
+      await refreshMyStats();
+    } else {
+      panel.classList.remove('show');
+      panel.classList.add('hidden');
+    }
+  });
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      panel.classList.remove('show');
+      panel.classList.add('hidden');
+    });
+  }
+
+  const backdrop = document.getElementById('myStatsBackdrop');
+  if (backdrop) {
+    backdrop.addEventListener('click', () => {
+      panel.classList.remove('show');
+      panel.classList.add('hidden');
+    });
+  }
+
+  if (sortSelect) {
+    sortSelect.addEventListener('change', refreshMyStats);
+  }
+
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', refreshMyStats);
+  }
+}
 
 setupDiscord();

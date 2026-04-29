@@ -9,7 +9,9 @@
     "dev:bot": "pnpm --filter @lirdle/bot run dev",
     "dev:web": "pnpm --filter @lirdle/web run dev",
     "dev": "pnpm --parallel --filter @lirdle/* run dev",
+    "force-reset-db": "pnpm --filter @lirdle/db exec prisma db push --force-reset && pnpm --filter @lirdle/db exec prisma generate",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "prettier-write": "prettier --write .",
     "lint": "prettier --check . && eslint ."
   },
   "keywords": [],
